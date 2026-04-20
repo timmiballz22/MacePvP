@@ -1,1 +1,0 @@
-The game is supposed to be a standalone file inside the counter clash html. Make things hard-coded into the counter clash html standalone game file when requested, it is supposed to be downloaded html then dragged into the browser to play
