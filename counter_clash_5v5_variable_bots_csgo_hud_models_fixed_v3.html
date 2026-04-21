@@ -706,7 +706,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
     const mv=Math.abs(ent.vel.x)>.015||Math.abs(ent.vel.z)>.015;
     const air=!ent.onGround;
     const {body,head,lArm,rArm,lLeg,rLeg,weaponMace,weaponKnife}=ch.parts;
-    const ARM_OUT_L=0.62, ARM_OUT_R=-0.62;
+    const ARM_OUT_L=0.35, ARM_OUT_R=-0.35;
 
     if(body){
       body.position.y=(mv&&!air?Math.abs(Math.sin(t))*0.018:0.006*Math.sin(t*0.35));
@@ -1168,7 +1168,7 @@ function mkEnt(x,y,z,opts={}){
     botIndex:opts.botIndex||0,
     pos:new THREE.Vector3(x,y,z),vel:new THREE.Vector3(),
     hp:20,maxHp:20,dead:false,deadT:0,onGround:false,peakY:y,
-    facing:0,atkCD:0,iframe:0,slamT:0,lastAtkMs:-1e9,wcCD:0,wc:WC_MAX,
+    facing:0,atkCD:0,iframe:0,slamT:0,lastAtkMs:-1e9,wcCD:0,wc:0,
     armorSlots:{...DEFAULT_ARMOR},
     aiState:'approach',aiTimer:0,aiStep:0,strafeDir:Math.random()<0.5?-1:1,
     lastAttacker:null,lastDamageType:'mace',lastDamageMeta:null,
@@ -2466,7 +2466,7 @@ function renderChar(ent){
   const mv=Math.abs(ent.vel.x)>.015||Math.abs(ent.vel.z)>.015;
   const air=!ent.onGround;
   const{body,head,lArm,rArm,lLeg,rLeg}=ch.parts;
-  const ARM_OUT_L=0.60,ARM_OUT_R=-0.60;
+  const ARM_OUT_L=0.35,ARM_OUT_R=-0.35;
 
   if(body){body.position.y=(mv&&!air?Math.abs(Math.sin(t))*0.018:0.006*Math.sin(t*0.35));body.rotation.z=mv&&!air?Math.sin(t)*0.015:0;}
   if(head){head.rotation.x=air?-0.06:0.01*Math.sin(t*0.4);head.rotation.z=mv&&!air?Math.sin(t)*0.03:0;head.rotation.y=0;}
@@ -2875,31 +2875,31 @@ loop();
     const swing = Math.sin(t) * 0.02;
 
     if(ent.slamT > 0){
-      lArm.rotation.y = 0.70;
-      rArm.rotation.y = -0.70;
+      lArm.rotation.y = 0.42;
+      rArm.rotation.y = -0.42;
       lArm.rotation.z = 0.07;
       rArm.rotation.z = -0.05;
       return;
     }
 
     if(air){
-      lArm.rotation.y = 0.66;
-      rArm.rotation.y = -0.66;
+      lArm.rotation.y = 0.39;
+      rArm.rotation.y = -0.39;
       lArm.rotation.z = 0.06;
       rArm.rotation.z = -0.06;
       return;
     }
 
     if(mv){
-      lArm.rotation.y = 0.61 + swing;
-      rArm.rotation.y = -0.61 - swing;
+      lArm.rotation.y = 0.35 + swing;
+      rArm.rotation.y = -0.35 - swing;
       lArm.rotation.z = 0.06;
       rArm.rotation.z = -0.05;
       return;
     }
 
-    lArm.rotation.y = 0.58;
-    rArm.rotation.y = -0.58;
+    lArm.rotation.y = 0.32;
+    rArm.rotation.y = -0.32;
     lArm.rotation.z = 0.05;
     rArm.rotation.z = -0.04;
   }
