@@ -976,6 +976,51 @@ const TEX_PLAT_TOP=mkTex((x,s)=>{
   x.strokeStyle='rgba(0,0,0,0.10)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
 });
 
+// Sand texture
+const TEX_SAND=mkTex((x,s)=>{
+  x.fillStyle='#C2A05A';x.fillRect(0,0,s,s);
+  for(let i=0;i<140;i++){const g=Math.random();x.fillStyle=g>.7?'#B8923E':g>.4?'#CEB070':'#D4BA80';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);}
+  x.strokeStyle='rgba(0,0,0,0.07)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+});
+
+// Brick texture
+const TEX_BRICK=mkTex((x,s)=>{
+  x.fillStyle='#7A2E1E';x.fillRect(0,0,s,s);
+  for(let row=0;row<8;row++){
+    const oy=row%2?0:4;
+    for(let col=0;col<9;col++){
+      const shade=Math.random()>.5?'#9E4232':'#8B3526';
+      x.fillStyle=shade;
+      x.fillRect((col*8+oy)%s,row*8,6,6);
+    }
+  }
+  x.strokeStyle='rgba(0,0,0,0.30)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+});
+
+// Ice texture
+const TEX_ICE=mkTex((x,s)=>{
+  x.fillStyle='#A8D8F0';x.fillRect(0,0,s,s);
+  for(let i=0;i<90;i++){const g=Math.random();x.fillStyle=g>.6?'#BDE8FF':g>.3?'#9CC8E0':'#C8EEFF';x.fillRect(Math.random()*s|0,Math.random()*s|0,3,3);}
+  x.strokeStyle='rgba(140,200,255,0.45)';x.lineWidth=1;
+  for(let i=0;i<5;i++){x.beginPath();x.moveTo(Math.random()*s,Math.random()*s);x.lineTo(Math.random()*s,Math.random()*s);x.stroke();}
+  x.strokeStyle='rgba(0,0,0,0.08)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+});
+
+// Mossy stone texture
+const TEX_MOSSY=mkTex((x,s)=>{
+  x.fillStyle='#6E7A54';x.fillRect(0,0,s,s);
+  for(let i=0;i<110;i++){const g=Math.random();x.fillStyle=g>.6?'#5A6840':g>.3?'#7A8A60':'#4A5832';x.fillRect(Math.random()*s|0,Math.random()*s|0,4,4);}
+  x.strokeStyle='rgba(0,0,0,0.22)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+});
+
+// Sandstone texture (stratified bands)
+const TEX_SANDSTONE=mkTex((x,s)=>{
+  x.fillStyle='#D4A855';x.fillRect(0,0,s,s);
+  for(let row=0;row<8;row++){x.fillStyle=Math.random()>.5?'#C49840':'#E0BC70';x.fillRect(0,row*8,s,7);}
+  for(let i=0;i<60;i++){x.fillStyle=Math.random()>.5?'#B88030':'#EAC87A';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);}
+  x.strokeStyle='rgba(0,0,0,0.14)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+});
+
 const mapRoot = new THREE.Group();
 scene.add(mapRoot);
 const platforms=[];
@@ -989,76 +1034,233 @@ const MAPS = {
     name:'Snow Keep',
     sky:0x7EC8E3,
     fog:0x9FD8E8,
-    blueSpawns:[[-30,2,-14],[-30,2,-7],[-30,2,0],[-30,2,7],[-30,2,14]],
-    redSpawns:[[30,2,-14],[30,2,-7],[30,2,0],[30,2,7],[30,2,14]],
+    fogDensity:0.003,
+    blueSpawns:[[-90,2,-14],[-90,2,-7],[-90,2,0],[-90,2,7],[-90,2,14]],
+    redSpawns:[[90,2,-14],[90,2,-7],[90,2,0],[90,2,7],[90,2,14]],
     blocks:[
-      {cx:0,cy:-1,cz:0,sx:92,sy:2,sz:92,type:'snowground'},
-      {cx:0,cy:3,cz:0,sx:8,sy:6,sz:26,type:'wall'},
-      {cx:-18,cy:2.5,cz:0,sx:12,sy:5,sz:8,type:'wall'},
-      {cx:18,cy:2.5,cz:0,sx:12,sy:5,sz:8,type:'wall'},
-      {cx:-10,cy:1,cz:-22,sx:8,sy:2,sz:8,type:'crate'},
-      {cx:-10,cy:1,cz:22,sx:8,sy:2,sz:8,type:'crate'},
-      {cx:10,cy:1,cz:-22,sx:8,sy:2,sz:8,type:'crate'},
-      {cx:10,cy:1,cz:22,sx:8,sy:2,sz:8,type:'crate'},
-      {cx:-24,cy:3.5,cz:-18,sx:10,sy:1,sz:10,type:'snowplat'},
-      {cx:-24,cy:3.5,cz:18,sx:10,sy:1,sz:10,type:'snowplat'},
-      {cx:24,cy:3.5,cz:-18,sx:10,sy:1,sz:10,type:'snowplat'},
-      {cx:24,cy:3.5,cz:18,sx:10,sy:1,sz:10,type:'snowplat'},
-      {cx:0,cy:6,cz:-18,sx:12,sy:1,sz:8,type:'snowplat'},
-      {cx:0,cy:6,cz:18,sx:12,sy:1,sz:8,type:'snowplat'},
-      {cx:-34,cy:1.5,cz:0,sx:4,sy:3,sz:28,type:'wall'},
-      {cx:34,cy:1.5,cz:0,sx:4,sy:3,sz:28,type:'wall'}
+      // ground
+      {cx:0,cy:-1,cz:0,sx:276,sy:2,sz:276,type:'snowground'},
+      // center keep tower
+      {cx:0,cy:5,cz:0,sx:22,sy:10,sz:22,type:'wall'},
+      {cx:0,cy:10.5,cz:0,sx:18,sy:1,sz:18,type:'snowplat'},
+      {cx:-8,cy:12,cz:0,sx:4,sy:3,sz:22,type:'wall'},
+      {cx:8,cy:12,cz:0,sx:4,sy:3,sz:22,type:'wall'},
+      {cx:0,cy:12,cz:-8,sx:10,sy:3,sz:4,type:'wall'},
+      {cx:0,cy:12,cz:8,sx:10,sy:3,sz:4,type:'wall'},
+      // castle wings
+      {cx:-54,cy:3.5,cz:0,sx:28,sy:7,sz:20,type:'wall'},
+      {cx:54,cy:3.5,cz:0,sx:28,sy:7,sz:20,type:'wall'},
+      {cx:-54,cy:7.5,cz:0,sx:22,sy:1,sz:14,type:'snowplat'},
+      {cx:54,cy:7.5,cz:0,sx:22,sy:1,sz:14,type:'snowplat'},
+      // quadrant snow platforms
+      {cx:-72,cy:3.5,cz:-54,sx:26,sy:1,sz:26,type:'snowplat'},
+      {cx:-72,cy:3.5,cz:54,sx:26,sy:1,sz:26,type:'snowplat'},
+      {cx:72,cy:3.5,cz:-54,sx:26,sy:1,sz:26,type:'snowplat'},
+      {cx:72,cy:3.5,cz:54,sx:26,sy:1,sz:26,type:'snowplat'},
+      // snow crate cover
+      {cx:-30,cy:1,cz:-66,sx:18,sy:2,sz:18,type:'crate'},
+      {cx:-30,cy:1,cz:66,sx:18,sy:2,sz:18,type:'crate'},
+      {cx:30,cy:1,cz:-66,sx:18,sy:2,sz:18,type:'crate'},
+      {cx:30,cy:1,cz:66,sx:18,sy:2,sz:18,type:'crate'},
+      // stacked crate tops
+      {cx:-30,cy:4,cz:-66,sx:9,sy:4,sz:9,type:'snowplat'},
+      {cx:30,cy:4,cz:66,sx:9,sy:4,sz:9,type:'snowplat'},
+      // mid lane walls
+      {cx:-30,cy:2.5,cz:0,sx:6,sy:5,sz:28,type:'wall'},
+      {cx:30,cy:2.5,cz:0,sx:6,sy:5,sz:28,type:'wall'},
+      // elevated flank platforms
+      {cx:0,cy:6,cz:-54,sx:28,sy:1,sz:18,type:'snowplat'},
+      {cx:0,cy:6,cz:54,sx:28,sy:1,sz:18,type:'snowplat'},
+      // outer side walls
+      {cx:-102,cy:2,cz:0,sx:10,sy:4,sz:80,type:'wall'},
+      {cx:102,cy:2,cz:0,sx:10,sy:4,sz:80,type:'wall'},
+      // corner towers
+      {cx:-96,cy:5,cz:-96,sx:16,sy:10,sz:16,type:'wall'},
+      {cx:-96,cy:5,cz:96,sx:16,sy:10,sz:16,type:'wall'},
+      {cx:96,cy:5,cz:-96,sx:16,sy:10,sz:16,type:'wall'},
+      {cx:96,cy:5,cz:96,sx:16,sy:10,sz:16,type:'wall'},
+      // stone pillars
+      {cx:-42,cy:3,cz:-30,sx:5,sy:6,sz:5,type:'wall'},
+      {cx:-42,cy:3,cz:30,sx:5,sy:6,sz:5,type:'wall'},
+      {cx:42,cy:3,cz:-30,sx:5,sy:6,sz:5,type:'wall'},
+      {cx:42,cy:3,cz:30,sx:5,sy:6,sz:5,type:'wall'},
+      // elevated wing side shelves
+      {cx:-54,cy:6.5,cz:-36,sx:10,sy:1,sz:14,type:'snowplat'},
+      {cx:-54,cy:6.5,cz:36,sx:10,sy:1,sz:14,type:'snowplat'},
+      {cx:54,cy:6.5,cz:-36,sx:10,sy:1,sz:14,type:'snowplat'},
+      {cx:54,cy:6.5,cz:36,sx:10,sy:1,sz:14,type:'snowplat'},
+      // spawn area cover platforms
+      {cx:-80,cy:1,cz:-24,sx:8,sy:2,sz:12,type:'snowplat'},
+      {cx:-80,cy:1,cz:24,sx:8,sy:2,sz:12,type:'snowplat'},
+      {cx:80,cy:1,cz:-24,sx:8,sy:2,sz:12,type:'snowplat'},
+      {cx:80,cy:1,cz:24,sx:8,sy:2,sz:12,type:'snowplat'},
+      // scattered ruined walls
+      {cx:-15,cy:2,cz:-45,sx:4,sy:4,sz:16,type:'wall'},
+      {cx:15,cy:2,cz:45,sx:4,sy:4,sz:16,type:'wall'},
+      {cx:-15,cy:2,cz:45,sx:4,sy:4,sz:16,type:'wall'},
+      {cx:15,cy:2,cz:-45,sx:4,sy:4,sz:16,type:'wall'},
+      // ice shelf accents
+      {cx:-60,cy:0.5,cz:-78,sx:14,sy:1,sz:10,type:'snowplat'},
+      {cx:60,cy:0.5,cz:78,sx:14,sy:1,sz:10,type:'snowplat'},
+      {cx:-60,cy:0.5,cz:78,sx:14,sy:1,sz:10,type:'snowplat'},
+      {cx:60,cy:0.5,cz:-78,sx:14,sy:1,sz:10,type:'snowplat'},
     ],
-    trees:[[-40,-34],[-40,34],[40,-34],[40,34],[-8,-36],[8,36]]
+    trees:[[-120,-102],[-120,102],[120,-102],[120,102],
+           [-24,-108],[24,108],[-24,108],[24,-108],
+           [-60,-90],[60,-90],[-60,90],[60,90],
+           [-108,-60],[108,-60],[-108,60],[108,60],
+           [-84,-42],[84,-42],[-84,42],[84,42]]
   },
   quarry_lane:{
     name:'Quarry Lane',
     sky:0x8AB0C8,
     fog:0x92AABD,
-    blueSpawns:[[-31,2,-13],[-31,2,-6],[-31,2,0],[-31,2,6],[-31,2,13]],
-    redSpawns:[[31,2,-13],[31,2,-6],[31,2,0],[31,2,6],[31,2,13]],
+    fogDensity:0.003,
+    blueSpawns:[[-93,2,-13],[-93,2,-6],[-93,2,0],[-93,2,6],[-93,2,13]],
+    redSpawns:[[93,2,-13],[93,2,-6],[93,2,0],[93,2,6],[93,2,13]],
     blocks:[
-      {cx:0,cy:-1,cz:0,sx:92,sy:2,sz:92,type:'ground'},
-      {cx:0,cy:2.5,cz:0,sx:14,sy:5,sz:14,type:'tower'},
-      {cx:0,cy:6,cz:0,sx:8,sy:1,sz:8,type:'stoneplat'},
-      {cx:-18,cy:2,cz:-20,sx:18,sy:4,sz:4,type:'wall'},
-      {cx:-18,cy:2,cz:20,sx:18,sy:4,sz:4,type:'wall'},
-      {cx:18,cy:2,cz:-20,sx:18,sy:4,sz:4,type:'wall'},
-      {cx:18,cy:2,cz:20,sx:18,sy:4,sz:4,type:'wall'},
-      {cx:-26,cy:1,cz:0,sx:6,sy:2,sz:10,type:'crate'},
-      {cx:26,cy:1,cz:0,sx:6,sy:2,sz:10,type:'crate'},
-      {cx:-6,cy:1,cz:-28,sx:8,sy:2,sz:8,type:'crate'},
-      {cx:6,cy:1,cz:28,sx:8,sy:2,sz:8,type:'crate'},
-      {cx:0,cy:1,cz:-30,sx:10,sy:2,sz:6,type:'crate'},
-      {cx:0,cy:1,cz:30,sx:10,sy:2,sz:6,type:'crate'},
-      {cx:-33,cy:3,cz:0,sx:4,sy:6,sz:30,type:'wall'},
-      {cx:33,cy:3,cz:0,sx:4,sy:6,sz:30,type:'wall'}
+      // ground
+      {cx:0,cy:-1,cz:0,sx:276,sy:2,sz:276,type:'ground'},
+      // central quarry tower
+      {cx:0,cy:4.5,cz:0,sx:20,sy:9,sz:20,type:'tower'},
+      {cx:0,cy:9.5,cz:0,sx:14,sy:1,sz:14,type:'stoneplat'},
+      {cx:-6,cy:11,cz:0,sx:4,sy:3,sz:20,type:'tower'},
+      {cx:6,cy:11,cz:0,sx:4,sy:3,sz:20,type:'tower'},
+      {cx:0,cy:11,cz:-6,sx:12,sy:3,sz:4,type:'tower'},
+      {cx:0,cy:11,cz:6,sx:12,sy:3,sz:4,type:'tower'},
+      // long quarry lane walls
+      {cx:-54,cy:2,cz:-20,sx:36,sy:4,sz:4,type:'wall'},
+      {cx:-54,cy:2,cz:20,sx:36,sy:4,sz:4,type:'wall'},
+      {cx:54,cy:2,cz:-20,sx:36,sy:4,sz:4,type:'wall'},
+      {cx:54,cy:2,cz:20,sx:36,sy:4,sz:4,type:'wall'},
+      // elevated quarry ledge platforms
+      {cx:-54,cy:3.5,cz:-60,sx:28,sy:1,sz:20,type:'stoneplat'},
+      {cx:54,cy:3.5,cz:-60,sx:28,sy:1,sz:20,type:'stoneplat'},
+      {cx:-54,cy:3.5,cz:60,sx:28,sy:1,sz:20,type:'stoneplat'},
+      {cx:54,cy:3.5,cz:60,sx:28,sy:1,sz:20,type:'stoneplat'},
+      // elevated stone ridge tops
+      {cx:-54,cy:7,cz:-60,sx:16,sy:7,sz:12,type:'stoneplat'},
+      {cx:54,cy:7,cz:-60,sx:16,sy:7,sz:12,type:'stoneplat'},
+      {cx:-54,cy:7,cz:60,sx:16,sy:7,sz:12,type:'stoneplat'},
+      {cx:54,cy:7,cz:60,sx:16,sy:7,sz:12,type:'stoneplat'},
+      // crate clusters
+      {cx:-78,cy:1,cz:0,sx:8,sy:2,sz:12,type:'crate'},
+      {cx:78,cy:1,cz:0,sx:8,sy:2,sz:12,type:'crate'},
+      {cx:-18,cy:1,cz:-84,sx:10,sy:2,sz:10,type:'crate'},
+      {cx:18,cy:1,cz:84,sx:10,sy:2,sz:10,type:'crate'},
+      // center approach crates
+      {cx:0,cy:1,cz:-90,sx:12,sy:2,sz:8,type:'crate'},
+      {cx:0,cy:1,cz:90,sx:12,sy:2,sz:8,type:'crate'},
+      {cx:-18,cy:1,cz:-66,sx:8,sy:2,sz:8,type:'crate'},
+      {cx:18,cy:1,cz:66,sx:8,sy:2,sz:8,type:'crate'},
+      // outer quarry boundary walls
+      {cx:-99,cy:3.5,cz:0,sx:10,sy:7,sz:90,type:'wall'},
+      {cx:99,cy:3.5,cz:0,sx:10,sy:7,sz:90,type:'wall'},
+      // mossy rock formations
+      {cx:-36,cy:2,cz:-42,sx:10,sy:4,sz:8,type:'mossy'},
+      {cx:36,cy:2,cz:42,sx:10,sy:4,sz:8,type:'mossy'},
+      {cx:-36,cy:2,cz:42,sx:10,sy:4,sz:8,type:'mossy'},
+      {cx:36,cy:2,cz:-42,sx:10,sy:4,sz:8,type:'mossy'},
+      // mid stone pillars
+      {cx:-24,cy:3,cz:-30,sx:5,sy:6,sz:5,type:'tower'},
+      {cx:24,cy:3,cz:30,sx:5,sy:6,sz:5,type:'tower'},
+      {cx:-24,cy:3,cz:30,sx:5,sy:6,sz:5,type:'tower'},
+      {cx:24,cy:3,cz:-30,sx:5,sy:6,sz:5,type:'tower'},
+      // stone platforms floating over mid
+      {cx:0,cy:6,cz:-66,sx:24,sy:1,sz:16,type:'stoneplat'},
+      {cx:0,cy:6,cz:66,sx:24,sy:1,sz:16,type:'stoneplat'},
+      // spawn area cover
+      {cx:-84,cy:1,cz:-28,sx:8,sy:2,sz:14,type:'crate'},
+      {cx:-84,cy:1,cz:28,sx:8,sy:2,sz:14,type:'crate'},
+      {cx:84,cy:1,cz:-28,sx:8,sy:2,sz:14,type:'crate'},
+      {cx:84,cy:1,cz:28,sx:8,sy:2,sz:14,type:'crate'},
+      // extra mossy boulders
+      {cx:-66,cy:1.5,cz:-42,sx:7,sy:3,sz:7,type:'mossy'},
+      {cx:66,cy:1.5,cz:42,sx:7,sy:3,sz:7,type:'mossy'},
+      {cx:-12,cy:1.5,cz:54,sx:7,sy:3,sz:7,type:'mossy'},
+      {cx:12,cy:1.5,cz:-54,sx:7,sy:3,sz:7,type:'mossy'},
     ],
-    trees:[[-39,0],[39,0],[-10,34],[10,-34]]
+    trees:[[-117,0],[117,0],[-30,102],[30,-102],
+           [-90,78],[90,-78],[-90,-78],[90,78],
+           [-60,-102],[60,102],[-36,-90],[36,90],
+           [-78,54],[78,-54],[-12,-114],[12,114]]
   },
   dust_temple:{
     name:'Dust Temple',
     sky:0xD0B48A,
     fog:0xD8C29D,
-    blueSpawns:[[-30,2,-12],[-30,2,-5],[-30,2,0],[-30,2,5],[-30,2,12]],
-    redSpawns:[[30,2,-12],[30,2,-5],[30,2,0],[30,2,5],[30,2,12]],
+    fogDensity:0.003,
+    blueSpawns:[[-90,2,-12],[-90,2,-5],[-90,2,0],[-90,2,5],[-90,2,12]],
+    redSpawns:[[90,2,-12],[90,2,-5],[90,2,0],[90,2,5],[90,2,12]],
     blocks:[
-      {cx:0,cy:-1,cz:0,sx:90,sy:2,sz:90,type:'ground'},
-      {cx:0,cy:1,cz:0,sx:12,sy:2,sz:12,type:'crate'},
-      {cx:-20,cy:2,cz:-12,sx:10,sy:4,sz:4,type:'wall'},
-      {cx:-20,cy:2,cz:12,sx:10,sy:4,sz:4,type:'wall'},
-      {cx:20,cy:2,cz:-12,sx:10,sy:4,sz:4,type:'wall'},
-      {cx:20,cy:2,cz:12,sx:10,sy:4,sz:4,type:'wall'},
-      {cx:-6,cy:3.5,cz:-24,sx:10,sy:1,sz:10,type:'stoneplat'},
-      {cx:-6,cy:3.5,cz:24,sx:10,sy:1,sz:10,type:'stoneplat'},
-      {cx:6,cy:3.5,cz:-24,sx:10,sy:1,sz:10,type:'stoneplat'},
-      {cx:6,cy:3.5,cz:24,sx:10,sy:1,sz:10,type:'stoneplat'},
-      {cx:0,cy:5.5,cz:-18,sx:8,sy:1,sz:8,type:'stoneplat'},
-      {cx:0,cy:5.5,cz:18,sx:8,sy:1,sz:8,type:'stoneplat'},
-      {cx:-32,cy:2,cz:0,sx:4,sy:4,sz:26,type:'wall'},
-      {cx:32,cy:2,cz:0,sx:4,sy:4,sz:26,type:'wall'},
-      {cx:-12,cy:1,cz:0,sx:6,sy:2,sz:6,type:'crate'},
-      {cx:12,cy:1,cz:0,sx:6,sy:2,sz:6,type:'crate'}
+      // ground
+      {cx:0,cy:-1,cz:0,sx:276,sy:2,sz:276,type:'sandground'},
+      // central temple base
+      {cx:0,cy:2,cz:0,sx:28,sy:4,sz:28,type:'sandstone'},
+      {cx:0,cy:5,cz:0,sx:18,sy:6,sz:18,type:'sandstone'},
+      {cx:0,cy:8.5,cz:0,sx:22,sy:1,sz:22,type:'sandstone'},
+      {cx:0,cy:10,cz:0,sx:8,sy:3,sz:8,type:'sandstone'},
+      // temple corner columns
+      {cx:-12,cy:4.5,cz:-12,sx:4,sy:9,sz:4,type:'brick'},
+      {cx:12,cy:4.5,cz:-12,sx:4,sy:9,sz:4,type:'brick'},
+      {cx:-12,cy:4.5,cz:12,sx:4,sy:9,sz:4,type:'brick'},
+      {cx:12,cy:4.5,cz:12,sx:4,sy:9,sz:4,type:'brick'},
+      // side temple wings
+      {cx:-60,cy:2.5,cz:0,sx:24,sy:5,sz:20,type:'brick'},
+      {cx:60,cy:2.5,cz:0,sx:24,sy:5,sz:20,type:'brick'},
+      {cx:-60,cy:5.5,cz:0,sx:18,sy:1,sz:14,type:'sandstone'},
+      {cx:60,cy:5.5,cz:0,sx:18,sy:1,sz:14,type:'sandstone'},
+      // sandstone quadrant platforms
+      {cx:-18,cy:3.5,cz:-72,sx:26,sy:1,sz:26,type:'sandstone'},
+      {cx:-18,cy:3.5,cz:72,sx:26,sy:1,sz:26,type:'sandstone'},
+      {cx:18,cy:3.5,cz:-72,sx:26,sy:1,sz:26,type:'sandstone'},
+      {cx:18,cy:3.5,cz:72,sx:26,sy:1,sz:26,type:'sandstone'},
+      // ancient brick walls
+      {cx:-60,cy:2,cz:-36,sx:10,sy:4,sz:4,type:'brick'},
+      {cx:-60,cy:2,cz:36,sx:10,sy:4,sz:4,type:'brick'},
+      {cx:60,cy:2,cz:-36,sx:10,sy:4,sz:4,type:'brick'},
+      {cx:60,cy:2,cz:36,sx:10,sy:4,sz:4,type:'brick'},
+      // sandstone pillars
+      {cx:-24,cy:3.5,cz:-36,sx:6,sy:7,sz:6,type:'sandstone'},
+      {cx:-24,cy:3.5,cz:36,sx:6,sy:7,sz:6,type:'sandstone'},
+      {cx:24,cy:3.5,cz:-36,sx:6,sy:7,sz:6,type:'sandstone'},
+      {cx:24,cy:3.5,cz:36,sx:6,sy:7,sz:6,type:'sandstone'},
+      // elevated temple approach platforms
+      {cx:0,cy:5.5,cz:-54,sx:24,sy:1,sz:18,type:'sandstone'},
+      {cx:0,cy:5.5,cz:54,sx:24,sy:1,sz:18,type:'sandstone'},
+      // sand dune mounds
+      {cx:-36,cy:1,cz:-36,sx:18,sy:2,sz:18,type:'sand'},
+      {cx:36,cy:1,cz:36,sx:18,sy:2,sz:18,type:'sand'},
+      {cx:-36,cy:1,cz:36,sx:18,sy:2,sz:18,type:'sand'},
+      {cx:36,cy:1,cz:-36,sx:18,sy:2,sz:18,type:'sand'},
+      // border ruin walls
+      {cx:-96,cy:2,cz:0,sx:8,sy:4,sz:28,type:'brick'},
+      {cx:96,cy:2,cz:0,sx:8,sy:4,sz:28,type:'brick'},
+      {cx:-96,cy:2,cz:-60,sx:8,sy:4,sz:20,type:'brick'},
+      {cx:96,cy:2,cz:60,sx:8,sy:4,sz:20,type:'brick'},
+      {cx:-96,cy:2,cz:60,sx:8,sy:4,sz:20,type:'brick'},
+      {cx:96,cy:2,cz:-60,sx:8,sy:4,sz:20,type:'brick'},
+      // low sandstone cover blocks
+      {cx:-36,cy:1,cz:0,sx:12,sy:2,sz:8,type:'sandstone'},
+      {cx:36,cy:1,cz:0,sx:12,sy:2,sz:8,type:'sandstone'},
+      // spawn area cover
+      {cx:-78,cy:1,cz:-24,sx:8,sy:2,sz:14,type:'sandstone'},
+      {cx:-78,cy:1,cz:24,sx:8,sy:2,sz:14,type:'sandstone'},
+      {cx:78,cy:1,cz:-24,sx:8,sy:2,sz:14,type:'sandstone'},
+      {cx:78,cy:1,cz:24,sx:8,sy:2,sz:14,type:'sandstone'},
+      // side approach ramps/platforms
+      {cx:-48,cy:3.5,cz:-24,sx:14,sy:1,sz:10,type:'sandstone'},
+      {cx:-48,cy:3.5,cz:24,sx:14,sy:1,sz:10,type:'sandstone'},
+      {cx:48,cy:3.5,cz:-24,sx:14,sy:1,sz:10,type:'sandstone'},
+      {cx:48,cy:3.5,cz:24,sx:14,sy:1,sz:10,type:'sandstone'},
+      // outer long ruin walls (north/south)
+      {cx:0,cy:2.5,cz:-96,sx:60,sy:5,sz:8,type:'brick'},
+      {cx:0,cy:2.5,cz:96,sx:60,sy:5,sz:8,type:'brick'},
+      // extra sand dune shelves
+      {cx:-72,cy:0.5,cz:-78,sx:16,sy:1,sz:12,type:'sand'},
+      {cx:72,cy:0.5,cz:78,sx:16,sy:1,sz:12,type:'sand'},
+      {cx:-72,cy:0.5,cz:78,sx:16,sy:1,sz:12,type:'sand'},
+      {cx:72,cy:0.5,cz:-78,sx:16,sy:1,sz:12,type:'sand'},
     ],
     trees:[]
   }
@@ -1073,9 +1275,16 @@ function meshMaterialsForType(pd){
   const sx = Math.max(1,pd.sx/4), sz = Math.max(1,pd.sz/4);
   const sideRepeat = Math.max(1,pd.sx/4);
   let topBase = TEX_PLAT_TOP, sideBase = TEX_STONE;
-  if(pd.type==='ground' || pd.type==='snowground'){ topBase = pd.type==='snowground' ? TEX_SNOW : TEX_GRASS; sideBase = TEX_DIRT; }
-  else if(pd.type==='snowplat'){ topBase = TEX_SNOW; sideBase = TEX_STONE; }
-  else if(pd.type==='stoneplat' || pd.type==='tower' || pd.type==='wall' || pd.type==='crate'){ topBase = TEX_STONE; sideBase = TEX_STONE; }
+  if(pd.type==='ground'){ topBase=TEX_GRASS; sideBase=TEX_DIRT; }
+  else if(pd.type==='snowground'){ topBase=TEX_SNOW; sideBase=TEX_DIRT; }
+  else if(pd.type==='sandground'){ topBase=TEX_SAND; sideBase=TEX_DIRT; }
+  else if(pd.type==='snowplat'){ topBase=TEX_SNOW; sideBase=TEX_STONE; }
+  else if(pd.type==='ice'){ topBase=TEX_ICE; sideBase=TEX_ICE; }
+  else if(pd.type==='stoneplat'||pd.type==='tower'||pd.type==='wall'||pd.type==='crate'){ topBase=TEX_STONE; sideBase=TEX_STONE; }
+  else if(pd.type==='brick'){ topBase=TEX_BRICK; sideBase=TEX_BRICK; }
+  else if(pd.type==='mossy'){ topBase=TEX_MOSSY; sideBase=TEX_MOSSY; }
+  else if(pd.type==='sand'){ topBase=TEX_SAND; sideBase=TEX_SAND; }
+  else if(pd.type==='sandstone'){ topBase=TEX_SANDSTONE; sideBase=TEX_SANDSTONE; }
   const topTex=topBase.clone(); topTex.repeat.set(sx,sz); topTex.wrapS=topTex.wrapT=THREE.RepeatWrapping;
   const sideTex=sideBase.clone(); sideTex.repeat.set(sideRepeat,Math.max(1,pd.sy/2)); sideTex.wrapS=sideTex.wrapT=THREE.RepeatWrapping;
   return [
@@ -1144,14 +1353,14 @@ function buildMap(mapId){
   applyTeamSpawnsFromMap(currentMap);
   clearMap();
   scene.background=new THREE.Color(currentMap.sky);
-  scene.fog=new THREE.FogExp2(currentMap.fog,0.008);
+  scene.fog=new THREE.FogExp2(currentMap.fog, currentMap.fogDensity||0.008);
   for(const pd of currentMap.blocks)addPlatform(pd);
   addSpawnMarker('blue', TEAM_SPAWNS.blue, TEAM_COLORS.blue);
   addSpawnMarker('red', TEAM_SPAWNS.red, TEAM_COLORS.red);
   for(const t of currentMap.trees)addTree(t[0],t[1]);
   const floraCols=[0x3DA01A,0x55BB22,0x44AA18,0xCCDD22,0xFF4444,0xFFAA22,0xFF66AA];
-  for(let i=0;i<48;i++){
-    const x=(Math.random()-.5)*80,z=(Math.random()-.5)*80;
+  for(let i=0;i<240;i++){
+    const x=(Math.random()-.5)*240,z=(Math.random()-.5)*240;
     if(Math.abs(x)<8&&Math.abs(z)<8)continue;
     addTuft(x,z,floraCols[Math.random()*floraCols.length|0]);
   }
