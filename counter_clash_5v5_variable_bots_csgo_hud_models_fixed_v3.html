@@ -59,9 +59,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
   font-size:12px;color:#AADDFF;text-shadow:1px 1px 0 #000;
   background:rgba(0,0,0,0.42);padding:3px 8px;}
 #hurt-tint{position:fixed;inset:0;pointer-events:none;z-index:998;opacity:0;
-  background:
-    radial-gradient(circle at center, rgba(255,80,80,0.02) 0%, rgba(255,0,0,0.10) 44%, rgba(120,0,0,0.52) 100%),
-    linear-gradient(rgba(255,0,0,0.18), rgba(255,0,0,0.18));}
+  background:radial-gradient(ellipse at center,rgba(200,0,0,0) 28%,rgba(180,0,0,0.82) 100%);}
 #dead-overlay{position:fixed;bottom:140px;left:50%;transform:translateX(-50%);
   pointer-events:none;z-index:1001;display:none;text-align:center;}
 #dead-overlay .dead-msg{color:#FF7A7A;font-family:'Courier New',monospace;font-size:16px;font-weight:bold;
@@ -113,15 +111,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
 .dmg-num.smash{color:#FFD700;font-size:28px;}
 .dmg-num.crit{color:#FF6622;font-size:24px;}
 @keyframes floatDmg{0%{opacity:1;transform:translateX(-50%) translateY(0);}100%{opacity:0;transform:translateX(-50%) translateY(-70px);}}
+/* ── CS:GO-style gapped 4-arm crosshair ── */
 #xhair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:22px;height:22px;pointer-events:none;opacity:0.85;}
-#xhair::before,#xhair::after{content:'';position:absolute;background:rgba(255,255,255,0.95);
-  box-shadow:0 0 3px rgba(0,0,0,0.8);}
-#xhair::before{width:2px;height:8px;left:10px;top:0;}
-#xhair::after{width:8px;height:2px;top:10px;left:0;}
+  width:0;height:0;pointer-events:none;}
+#xh-t,#xh-b{position:absolute;width:2px;left:-1px;
+  background:rgba(255,255,255,0.95);box-shadow:0 0 3px rgba(0,0,0,0.85);}
+#xh-t{top:-14px;height:9px;}
+#xh-b{top:5px;height:9px;}
+#xh-l,#xh-r{position:absolute;height:2px;top:-1px;
+  background:rgba(255,255,255,0.95);box-shadow:0 0 3px rgba(0,0,0,0.85);}
+#xh-l{left:-14px;width:9px;}
+#xh-r{left:5px;width:9px;}
+/* Hit flash states */
+#xhair.xh-hit #xh-t,#xhair.xh-hit #xh-b,
+#xhair.xh-hit #xh-l,#xhair.xh-hit #xh-r{background:rgba(255,50,50,1);}
+#xhair.xh-kill #xh-t,#xhair.xh-kill #xh-b,
+#xhair.xh-kill #xh-l,#xhair.xh-kill #xh-r{background:rgba(255,210,0,1);}
 #xhair-dot{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:3px;height:3px;background:#fff;border-radius:50%;pointer-events:none;
-  box-shadow:0 0 3px rgba(0,0,0,0.9);}
+  width:2px;height:2px;background:rgba(255,255,255,0.9);border-radius:50%;
+  pointer-events:none;box-shadow:0 0 3px rgba(0,0,0,0.9);}
 #atk-ind{position:fixed;top:calc(50% + 20px);left:50%;transform:translateX(-50%);
   width:52px;height:8px;border:1px solid rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);
   pointer-events:none;opacity:0.95;display:none;border-radius:2px;overflow:hidden;}
@@ -180,14 +188,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="xhair"></div><div id="xhair-dot"></div>
+<div id="xhair"><span id="xh-t"></span><span id="xh-b"></span><span id="xh-l"></span><span id="xh-r"></span></div><div id="xhair-dot"></div>
 <div id="atk-ind"><div id="atk-fill"></div></div>
 <div id="hurt-tint"></div>
 <div id="dead-overlay"><div class="dead-msg" id="dead-msg">YOU DIED</div><div class="spec-msg" id="spec-msg"></div></div>
 
 <!-- HUD -->
 <div id="hud">
-  <div id="score-bar"><span id="score-blue" style="color:#8CB7FF;">0</span> <span id="score-sep" style="color:#999;font-size:13px;"> BLUE — RED </span><span id="score-red" style="color:#FF8C8C;">0</span></div>
+  <div id="score-bar"><div id="round-pips-blue" style="display:flex;gap:3px;align-items:center;margin-right:7px;"></div><span id="score-blue" style="color:#8CB7FF;">0</span><span id="score-sep" style="color:#777;font-size:12px;margin:0 8px;">—</span><span id="score-red" style="color:#FF8C8C;">0</span><div id="round-pips-red" style="display:flex;gap:3px;align-items:center;margin-left:7px;"></div></div>
   <div id="ctrl">WASD Move · Space Jump · Mouse Look · 1 Mace · 2 Knife · 3 Wind Charge · B Buy · LMB Attack · RMB Alt · P View · Esc Pause</div>
   <div id="combo"></div>
   <div id="announce"></div>
@@ -2079,9 +2087,9 @@ function stepEnt(ent){
   ent.pos.x+=ent.vel.x; resolveXZ(ent,'x');
   ent.pos.z+=ent.vel.z; resolveXZ(ent,'z');
   ent.pos.y+=ent.vel.y; resolveY(ent,wasOn);
-  ent.pos.x=Math.max(-44,Math.min(44,ent.pos.x));
-  ent.pos.z=Math.max(-44,Math.min(44,ent.pos.z));
-  if(ent.pos.y<-20)ent.hp=0;
+  ent.pos.x=Math.max(-200,Math.min(200,ent.pos.x));
+  ent.pos.z=Math.max(-200,Math.min(200,ent.pos.z));
+  if(ent.pos.y<-30)ent.hp=0;
 }
 function trackPeak(ent){
   if(!ent.onGround&&ent.pos.y>ent.peakY)ent.peakY=ent.pos.y;
@@ -4498,6 +4506,403 @@ window.__ECON = {
 };
 })();
 
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     UX / UI / Gameplay Mega-Patch
+     Fixes: audio, hit marker, round pips, smash indicator,
+            WC auto-hotbar, kill streaks, proximity alert,
+            dead-screen improvements, announce enhancements
+     ═══════════════════════════════════════════════════════════════ -->
+<style id="ux-mega-patch">
+/* ── Round win pips ──────────────────────────────────────────── */
+.rpip{width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  border:1px solid rgba(255,255,255,0.28);background:transparent;
+  transition:background 0.22s,border-color 0.22s;}
+#round-pips-blue .rpip.won{background:#6FA6FF;border-color:#6FA6FF;
+  box-shadow:0 0 4px rgba(111,166,255,0.6);}
+#round-pips-red  .rpip.won{background:#FF7070;border-color:#FF7070;
+  box-shadow:0 0 4px rgba(255,112,112,0.6);}
+
+/* ── Smash-ready fall meter glow ─────────────────────────────── */
+@keyframes smashPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 10px rgba(255,210,0,0.7);}}
+#fall-meter.smash-ready{color:#FFD700 !important;border-color:#AA8800 !important;
+  background:rgba(55,38,0,0.92) !important;animation:smashPulse 0.7s ease-in-out infinite;}
+#fall-meter.crit-ready{color:#88EEFF !important;border-color:#2288AA !important;}
+
+/* ── Enemy-behind proximity warning ─────────────────────────── */
+#enemy-prox{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);
+  padding:4px 14px;background:rgba(140,0,0,0.82);border:1px solid rgba(255,80,80,0.6);
+  color:#FFAAAA;font-size:11px;letter-spacing:1.2px;pointer-events:none;
+  z-index:1100;display:none;font-family:'Courier New',monospace;}
+
+/* ── Kill streak overlay ─────────────────────────────────────── */
+#streak-overlay{position:fixed;top:36%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:1105;text-align:center;opacity:0;
+  transition:opacity 0.18s ease;font-family:'Courier New',monospace;}
+#streak-line{font-size:44px;font-weight:bold;color:#FFD700;letter-spacing:2px;
+  text-shadow:3px 3px 0 #000,-3px -3px 0 #000,0 0 28px rgba(255,165,0,0.8);}
+#streak-sub{font-size:16px;color:#FFF2A0;text-shadow:2px 2px 0 #000;margin-top:3px;letter-spacing:1px;}
+
+/* ── Audio activation hint ───────────────────────────────────── */
+#audio-hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+  color:#666;font-size:10px;padding:3px 12px;background:rgba(0,0,0,0.52);
+  pointer-events:none;z-index:1100;opacity:0;transition:opacity 0.6s;
+  border:1px solid #333;font-family:'Courier New',monospace;letter-spacing:.8px;}
+
+/* ── Dead overlay improvement ────────────────────────────────── */
+#dead-overlay .dead-killer{color:#FFBBBB;font-size:11px;margin-top:3px;
+  background:rgba(0,0,0,0.45);padding:3px 12px;
+  border:1px solid rgba(255,100,100,0.25);letter-spacing:.8px;}
+
+/* ── Buy phase banner pulsing when <4s ──────────────────────── */
+@keyframes buyTick{0%,100%{opacity:1}50%{opacity:0.55}}
+#buy-phase-banner.ticking{animation:buyTick 0.8s ease-in-out infinite;
+  color:#FF8844 !important;border-color:#CC5500 !important;}
+
+/* ── Announce text – tighter padding, max-width ─────────────── */
+#announce{max-width:680px;line-height:1.15;padding:0 12px;}
+</style>
+
+<script>
+(function(){
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+// 1. WEB AUDIO SYSTEM
+// ═══════════════════════════════════════════════════════════════
+let _ac = null;
+let _audioOn = false;
+
+function _ensureAC(){
+  if(_ac) return _ac;
+  try{ _ac = new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  return _ac;
+}
+function _resumeAudio(){
+  const ac = _ensureAC();
+  if(ac && ac.state==='suspended') ac.resume();
+  _audioOn = true;
+  const hint = document.getElementById('audio-hint');
+  if(hint){ hint.style.opacity='0'; setTimeout(()=>hint.remove(),700); }
+}
+document.addEventListener('mousedown',_resumeAudio,{once:true,passive:true});
+document.addEventListener('keydown',_resumeAudio,{once:true,passive:true});
+
+function _tone(freq,dur,type,vol,freqEnd){
+  const ac=_ensureAC(); if(!ac||!_audioOn) return;
+  try{
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type=type||'sine';
+    o.frequency.setValueAtTime(freq,ac.currentTime);
+    if(freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd,ac.currentTime+dur);
+    g.gain.setValueAtTime(Math.max(0.001,vol||0.15),ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    o.start(); o.stop(ac.currentTime+dur+0.06);
+  }catch(e){}
+}
+function _noise(dur,vol){
+  const ac=_ensureAC(); if(!ac||!_audioOn) return;
+  try{
+    const buf=ac.createBuffer(1,Math.ceil(ac.sampleRate*dur),ac.sampleRate);
+    const d=buf.getChannelData(0); for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.4;
+    const src=ac.createBufferSource(), g=ac.createGain();
+    src.buffer=buf; src.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(vol||0.06,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    src.start(); src.stop(ac.currentTime+dur+0.05);
+  }catch(e){}
+}
+
+const SFX={
+  hit:   ()=>{ _tone(280,0.035,'square',0.22,200); _noise(0.03,0.05); },
+  kill:  ()=>{ _tone(820,0.04,'square',0.30,520); setTimeout(()=>_tone(460,0.07,'square',0.18,280),35); },
+  knifeHit:()=>{ _tone(360,0.035,'square',0.18,270); },
+  knifeBack:()=>{ _tone(580,0.055,'sawtooth',0.24,300); _noise(0.04,0.04); },
+  jump:  ()=>{ _tone(155,0.07,'sine',0.055,215); },
+  land:  ()=>{ _noise(0.045,0.07); _tone(95,0.05,'triangle',0.06,70); },
+  die:   ()=>{ _tone(400,0.09,'sine',0.24,200); setTimeout(()=>_tone(200,0.38,'sine',0.14,90),65); },
+  buy:   ()=>{ _tone(900,0.055,'sine',0.16,1120); setTimeout(()=>_tone(1120,0.09,'sine',0.20),52); },
+  totem: ()=>{ [380,560,740,940,740].forEach((f,i)=>setTimeout(()=>_tone(f,0.13,'sine',0.24),i*62)); },
+  wcThrow:()=>{ _tone(720,0.18,'sine',0.08,380); },
+  wcBurst:()=>{ _tone(190,0.22,'sawtooth',0.20,75); _tone(430,0.14,'sine',0.09,210); _noise(0.12,0.08); },
+  roundStart:()=>{ _tone(440,0.11,'sine',0.24); setTimeout(()=>_tone(550,0.11,'sine',0.22),95); setTimeout(()=>_tone(660,0.15,'sine',0.20),190); },
+  roundWin: ()=>{ [440,550,660,880,1100].forEach((f,i)=>setTimeout(()=>_tone(f,0.14,'sine',0.24),i*70)); },
+  roundLose:()=>{ [660,550,440,350].forEach((f,i)=>setTimeout(()=>_tone(f,0.15,'sine',0.18),i*85)); },
+  matchWin: ()=>{ [440,660,880,660,880,1100].forEach((f,i)=>setTimeout(()=>_tone(f,0.16,'sine',0.28),i*80)); },
+  matchLose:()=>{ [440,330,220,180].forEach((f,i)=>setTimeout(()=>_tone(f,0.20,'sine',0.18),i*100)); },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// 2. HIT MARKER
+// ═══════════════════════════════════════════════════════════════
+let _hitT = 0;
+function _flashHit(isKill){
+  const xh=document.getElementById('xhair'); if(!xh) return;
+  xh.classList.remove('xh-hit','xh-kill');
+  void xh.offsetWidth;
+  xh.classList.add(isKill?'xh-kill':'xh-hit');
+  clearTimeout(_hitT);
+  _hitT=setTimeout(()=>xh.classList.remove('xh-hit','xh-kill'), isKill?340:185);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 3. ROUND WIN PIPS
+// ═══════════════════════════════════════════════════════════════
+function _buildPips(){
+  if(typeof roundScore==='undefined'||typeof ROUND_WIN_LIMIT==='undefined') return;
+  ['blue','red'].forEach(team=>{
+    const el=document.getElementById('round-pips-'+team); if(!el) return;
+    el.innerHTML='';
+    const wins=roundScore[team]||0;
+    for(let i=0;i<ROUND_WIN_LIMIT;i++){
+      const d=document.createElement('div');
+      d.className='rpip'+(i<wins?' won':'');
+      el.appendChild(d);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 4. SMASH-READY INDICATOR
+// ═══════════════════════════════════════════════════════════════
+function _updateSmashStyle(){
+  const fm=document.getElementById('fall-meter'); if(!fm||!player||player.dead){if(fm){fm.classList.remove('smash-ready','crit-ready');}return;}
+  const fall=getFall(player);
+  const smash=isSmash(fall,player.vel.y);
+  const crit=isCrit(player)&&!smash;
+  fm.classList.toggle('smash-ready',smash);
+  fm.classList.toggle('crit-ready',crit);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 5. ENEMY-BEHIND PROXIMITY ALERT
+// ═══════════════════════════════════════════════════════════════
+let _proxEl=null;
+function _ensureProx(){
+  if(_proxEl) return _proxEl;
+  _proxEl=document.createElement('div');
+  _proxEl.id='enemy-prox';
+  _proxEl.textContent='⚠ ENEMY BEHIND';
+  document.body.appendChild(_proxEl);
+  return _proxEl;
+}
+function _updateProxAlert(){
+  const el=_ensureProx();
+  if(!player||player.dead||typeof menuState==='undefined'||menuState!=='none'){el.style.display='none';return;}
+  const fx=Math.sin(player.facing), fz=Math.cos(player.facing);
+  let behind=false;
+  for(const ent of allEntities){
+    if(ent.dead||ent.team===player.team) continue;
+    const dx=ent.pos.x-player.pos.x, dz=ent.pos.z-player.pos.z;
+    const dist2=dx*dx+dz*dz;
+    if(dist2<(ATK_RANGE+1.2)*(ATK_RANGE+1.2)){
+      const invDist=1/Math.sqrt(dist2+0.0001);
+      if((dx*invDist)*fx+(dz*invDist)*fz < -0.15){behind=true;break;}
+    }
+  }
+  el.style.display=behind?'block':'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 6. KILL STREAK SYSTEM
+// ═══════════════════════════════════════════════════════════════
+let _streak=0, _streakT=null, _streakEl=null;
+function _ensureStreakEl(){
+  if(_streakEl) return;
+  const el=document.createElement('div'); el.id='streak-overlay';
+  el.innerHTML='<div id="streak-line"></div><div id="streak-sub"></div>';
+  document.body.appendChild(el); _streakEl=el;
+}
+function _showStreak(msg,sub){
+  _ensureStreakEl();
+  document.getElementById('streak-line').textContent=msg;
+  document.getElementById('streak-sub').textContent=sub||'';
+  _streakEl.style.opacity='1';
+  clearTimeout(_streakT);
+  _streakT=setTimeout(()=>{if(_streakEl)_streakEl.style.opacity='0';},2400);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 7. DEAD SCREEN KILLER INFO
+// ═══════════════════════════════════════════════════════════════
+function _updateDeadKillerLine(){
+  const ov=document.getElementById('dead-overlay'); if(!ov) return;
+  let killerLine=ov.querySelector('.dead-killer');
+  if(!player||!player.dead){if(killerLine)killerLine.style.display='none';return;}
+  if(!killerLine){
+    killerLine=document.createElement('div');
+    killerLine.className='dead-killer';
+    ov.appendChild(killerLine);
+  }
+  const killer=player.lastAttacker;
+  const weapon=player.lastDamageType||'void';
+  const weaponNames={mace:'⚒ MACE',knife:'🗡 KNIFE',wc:'🌀 WIND CHARGE',void:'☠ VOID'};
+  killerLine.textContent=killer?`Killed by ${killer.name} · ${weaponNames[weapon]||weapon}`:'Eliminated';
+  killerLine.style.display='block';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 8. BUY PHASE BANNER TICKING
+// ═══════════════════════════════════════════════════════════════
+function _updateBuyBannerStyle(){
+  const banner=document.getElementById('buy-phase-banner'); if(!banner) return;
+  const secsLeft=parseInt((banner.textContent.match(/(\d+)s/)||[,'99'])[1])||99;
+  banner.classList.toggle('ticking', secsLeft<=3 && banner.classList.contains('active'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 9. FUNCTION OVERRIDES
+// ═══════════════════════════════════════════════════════════════
+
+/* tryMace → hit marker + sound */
+const _mace0=tryMace;
+tryMace=function(atk,def){
+  const wasDead=def?def.dead:true;
+  const hit=_mace0(atk,def);
+  if(hit&&atk===player){
+    const killed=!wasDead&&def&&def.dead;
+    _flashHit(killed);
+    killed?SFX.kill():SFX.hit();
+  }
+  return hit;
+};
+
+/* tryKnife → hit marker + sound */
+const _knife0=tryKnife;
+tryKnife=function(atk,def){
+  const wasDead=def?def.dead:true;
+  const hit=_knife0(atk,def);
+  if(hit&&atk===player){
+    const killed=!wasDead&&def&&def.dead;
+    _flashHit(killed);
+    const bs=def&&def.lastDamageMeta&&def.lastDamageMeta.backstab;
+    killed?SFX.kill():bs?SFX.knifeBack():SFX.knifeHit();
+  }
+  return hit;
+};
+
+/* throwWC → sound */
+const _wc0=throwWC;
+throwWC=function(ent,dir){_wc0(ent,dir);if(ent===player)SFX.wcThrow();};
+
+/* windBurst → sound (once per burst, not per entity) */
+const _wb0=windBurst;
+windBurst=function(pr){_wb0(pr);SFX.wcBurst();};
+
+/* applyPurchase → buy sound + WC auto-hotbar */
+const _buy0=applyPurchase;
+applyPurchase=function(ent,buyKey){
+  const result=_buy0(ent,buyKey);
+  if(result&&ent===player){
+    buyKey==='totem'?SFX.totem():SFX.buy();
+    if(buyKey==='wc4'&&!hotbar.includes('wc')){
+      hotbar[2]='wc';
+      if(typeof buildHotbar==='function') setTimeout(buildHotbar,0);
+    }
+  }
+  return result;
+};
+
+/* markDeath → streak + death sound */
+const _death0=markDeath;
+markDeath=function(ent){
+  if(!ent||ent.dead) return;
+  const killer=ent.lastAttacker;
+  _death0(ent);
+  if(!ent.dead) return; // totem saved
+  if(ent===player){
+    _streak=0;
+    SFX.die();
+  } else if(killer===player){
+    _streak++;
+    const msgs={2:'DOUBLE KILL',3:'TRIPLE KILL',4:'QUAD KILL',5:'PENTA KILL'};
+    if(_streak>=2){
+      const msg=_streak>=6?'KILLING SPREE!':(msgs[_streak]||`${_streak} KILLS`);
+      _showStreak(msg,_streak>=4?'🔥🔥🔥':_streak>=3?'🔥🔥':'🔥');
+    }
+  }
+};
+
+/* initRound → reset streak + play sound + rebuild pips */
+const _ir0=initRound;
+initRound=function(initial){
+  _ir0(initial);
+  _streak=0;
+  setTimeout(()=>SFX.roundStart(),180);
+  _buildPips();
+};
+
+/* updateScoreUI → rebuild pips + cleaner sep text */
+const _sc0=updateScoreUI;
+updateScoreUI=function(){
+  _sc0();
+  _buildPips();
+  const sep=document.getElementById('score-sep');
+  if(sep&&typeof currentMap!=='undefined'&&currentMap){
+    sep.textContent=` ${currentMap.name} · R${roundNumber} `;
+  }
+};
+
+/* settleRoundIfNeeded → round win/lose sound */
+const _settle0=settleRoundIfNeeded;
+settleRoundIfNeeded=function(){
+  if(!roundActive||matchOver) return;
+  const blueB=roundScore.blue, redB=roundScore.red;
+  const wasActive=roundActive;
+  _settle0();
+  if(!wasActive) return;
+  const blueWon=roundScore.blue>blueB, redWon=roundScore.red>redB;
+  if((blueWon||redWon)&&player){
+    const won=player.team==='blue'?blueWon:redWon;
+    if(matchOver) setTimeout(()=>won?SFX.matchWin():SFX.matchLose(),200);
+    else          setTimeout(()=>won?SFX.roundWin():SFX.roundLose(),140);
+  }
+};
+
+/* updatePlayer → jump/land sounds */
+let _prevGnd=true, _prevVY=0;
+const _up0=updatePlayer;
+updatePlayer=function(){
+  const wasGnd=player?player.onGround:true;
+  _up0();
+  if(player&&!player.dead){
+    if(wasGnd&&!player.onGround&&player.vel.y>JUMP_F*0.85) SFX.jump();
+    if(!wasGnd&&player.onGround&&_prevVY<-0.09)            SFX.land();
+    _prevVY=player.vel.y;
+  }
+  _prevGnd=player?player.onGround:true;
+};
+
+/* updateHUD → smash style + prox alert + buy banner + dead killer + pips */
+const _hud0=updateHUD;
+updateHUD=function(){
+  _hud0();
+  _updateSmashStyle();
+  _updateProxAlert();
+  _updateBuyBannerStyle();
+  _updateDeadKillerLine();
+};
+
+// ═══════════════════════════════════════════════════════════════
+// 10. INITIAL SETUP
+// ═══════════════════════════════════════════════════════════════
+_ensureProx();
+_ensureStreakEl();
+_buildPips();
+
+// Audio hint
+(function(){
+  const h=document.createElement('div'); h.id='audio-hint';
+  h.textContent='♪ Click or press any key to enable audio';
+  document.body.appendChild(h);
+  requestAnimationFrame(()=>{ h.style.opacity='1'; });
+  setTimeout(()=>{ h.style.opacity='0'; },5000);
+  setTimeout(()=>{ h.remove(); },5800);
+})();
+
+})();
 </script>
 </body>
 </html>
