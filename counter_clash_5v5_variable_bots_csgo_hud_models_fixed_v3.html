@@ -4904,5 +4904,300 @@ _buildPips();
 
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FINAL UX / UI / GAMEPLAY POLISH PATCH
+     Fixes: HP bar colour, crosshair outline, attack-ready glow,
+            fall-meter clutter, respawn countdown, controls flash,
+            WC slot state, buy-banner B key, round pips, kill-feed
+            truncation, menu description accuracy, and more.
+     ═══════════════════════════════════════════════════════════════ -->
+<style id="final-ux-polish">
+
+/* ── 1. Crosshair: stronger dark outline for all backgrounds ───────────── */
+#xh-t,#xh-b,#xh-l,#xh-r{
+  box-shadow:0 0 0 1px rgba(0,0,0,1),0 0 5px rgba(0,0,0,1) !important;
+}
+#xhair-dot{
+  box-shadow:0 0 0 1px rgba(0,0,0,1),0 0 4px rgba(0,0,0,1) !important;
+}
+
+/* ── 2. Attack cooldown bar: bigger, green-pulse when ready ─────────────── */
+#atk-ind{
+  height:10px !important;
+  width:68px !important;
+  top:calc(50% + 19px) !important;
+  border-radius:3px !important;
+  border:1px solid rgba(255,255,255,0.35) !important;
+  background:rgba(0,0,0,0.60) !important;
+  transition:border-color 0.15s,box-shadow 0.15s !important;
+}
+#atk-fill{
+  transition:transform 0.04s linear,background-color 0.18s ease !important;
+  border-radius:2px;
+}
+@keyframes atkReadyGlow{
+  0%,100%{box-shadow:0 0 3px rgba(68,255,120,0.35)}
+  50%{box-shadow:0 0 10px rgba(68,255,120,0.75)}
+}
+#atk-ind.atk-ready{
+  border-color:rgba(68,255,120,0.65) !important;
+  animation:atkReadyGlow 0.75s ease-in-out infinite !important;
+}
+#atk-ind.atk-ready #atk-fill{background:#44FF88 !important;}
+
+/* ── 3. HP bar: honour colour states even with the !important override ──── */
+/* Done via JS setProperty('important') - no extra CSS needed here */
+
+/* ── 4. HP big number: colour on low/medium HP ─────────────────────────── */
+.csgo-hp-num.hp-crit{ color:#D95850 !important; }
+.csgo-hp-num.hp-warn{ color:#E0B84B !important; }
+
+/* ── 5. Fall meter: nudge up so it clears the hotbar comfortably ────────── */
+#fall-meter{ bottom:120px !important; }
+
+/* ── 6. WC bar: slightly more visible ──────────────────────────────────── */
+#wc-bar-bg{
+  width:100px !important;
+  height:8px !important;
+  border:1px solid rgba(100,150,255,0.45) !important;
+}
+
+/* ── 7. WC hotbar slot: dim when out of charges ─────────────────────────── */
+.hb-slot.wc-depleted{
+  opacity:0.40 !important;
+  filter:grayscale(0.6) !important;
+}
+/* WC cooldown overlay inside hotbar slot */
+.wc-cd-overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0.55);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:bold;color:#88AAFF;
+  pointer-events:none;letter-spacing:.5px;
+}
+
+/* ── 8. Round pips: 6 px so 7 pips per side don't crowd the score bar ───── */
+.rpip{ width:6px !important; height:6px !important; }
+
+/* ── 9. Kill feed: truncate long names ─────────────────────────────────── */
+.kill-line .team-blue,
+.kill-line .team-red{
+  max-width:120px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  display:inline-block;
+  vertical-align:middle;
+}
+
+/* ── 10. Hotbar slot: subtle press feedback ─────────────────────────────── */
+.hb-slot{ transition:transform 0.07s,opacity 0.12s !important; }
+.hb-slot:active{ transform:scale(0.88) !important; }
+
+/* ── 11. Controls hint: smooth fade-in/out ──────────────────────────────── */
+#ctrl{ transition:opacity 0.65s ease !important; }
+
+/* ── 12. Respawn countdown line in dead overlay ─────────────────────────── */
+#dead-overlay .dead-respawn{
+  color:#AADDFF;
+  font-family:'Courier New',monospace;
+  font-size:11px;
+  letter-spacing:.8px;
+  background:rgba(0,0,0,0.45);
+  padding:3px 12px;
+  border:1px solid rgba(100,160,255,0.25);
+  margin-top:3px;
+  display:block;
+}
+
+/* ── 13. Buy-phase banner: highlight the B key ──────────────────────────── */
+.buy-b-key{
+  color:#FFD700;
+  font-size:15px;
+  font-weight:bold;
+  padding:0 2px;
+  text-shadow:0 0 6px rgba(255,210,0,0.6);
+}
+
+/* ── 14. Score separator: slightly brighter, less wide ─────────────────── */
+#score-sep{ color:#8CAABB !important; }
+
+/* ── 15. Announce: slightly larger line-height for multi-line text ───────── */
+#announce{ line-height:1.2 !important; }
+
+/* ── 16. Hotbar slot number: slightly more readable ────────────────────── */
+.slot-num{ font-size:10px !important; color:#CCD !important; }
+
+/* ── 17. Low-HP pulse on the HP bar ─────────────────────────────────────── */
+@keyframes hpCritPulse{0%,100%{opacity:1}50%{opacity:0.55}}
+#p-hp-b.hp-crit-bar{ animation:hpCritPulse 0.7s ease-in-out infinite !important; }
+
+/* ── 18. Smash-ready fall meter: slightly stronger glow ────────────────── */
+@keyframes smashGlow{0%,100%{box-shadow:none}50%{box-shadow:0 0 14px rgba(255,210,0,0.85);}}
+#fall-meter.smash-ready{
+  animation:smashGlow 0.65s ease-in-out infinite !important;
+}
+
+/* ── 19. Dead overlay: push it a touch higher so it doesn't clip hotbar ─── */
+#dead-overlay{ bottom:160px !important; }
+
+/* ── 20. Roster card HP fill: colour from hpColor (applied via JS) ──────── */
+/* The csgo-card-hpfill already respects inline style from rebuildTeamRosters */
+
+</style>
+
+<script>
+/* ── FINAL UX POLISH PATCH ── */
+(function(){
+'use strict';
+
+// ── HP bar + HP number colour ─────────────────────────────────────────────
+function _applyHpColour(){
+  if(!player) return;
+  const pct = player.hp / player.maxHp * 100;
+  const col = pct > 60 ? '#7BD254' : pct > 30 ? '#E0B84B' : '#D95850';
+
+  // Override the always-green !important CSS rule
+  const pb = document.getElementById('p-hp-b');
+  if(pb){
+    pb.style.setProperty('background', col, 'important');
+    pb.classList.toggle('hp-crit-bar', pct <= 30);
+  }
+
+  // Big HP number colour
+  const hpNum = document.getElementById('p-hp-num');
+  if(hpNum){
+    hpNum.classList.toggle('hp-crit', pct <= 30);
+    hpNum.classList.toggle('hp-warn', pct > 30 && pct <= 60);
+  }
+}
+
+// ── Attack-ready glow on cooldown bar ────────────────────────────────────
+function _applyAtkState(){
+  const ind = document.getElementById('atk-ind');
+  if(!ind || !player || player.dead){ if(ind) ind.classList.remove('atk-ready'); return; }
+  const item = typeof selectedItem === 'function' ? selectedItem() : null;
+  const isMelee = item === 'mace' || item === 'knife';
+  const charge = typeof getAttackCharge === 'function' ? getAttackCharge(player) : 1;
+  ind.classList.toggle('atk-ready', isMelee && charge >= 0.98);
+}
+
+// ── Clean up fall-meter text (remove "1P · " / "3P · " prefix) ───────────
+function _cleanFallMeter(){
+  const fm = document.getElementById('fall-meter');
+  if(!fm) return;
+  fm.textContent = fm.textContent.replace(/^[13]P\s*·\s*/, '');
+}
+
+// ── WC slot: dim when depleted or on cooldown ─────────────────────────────
+function _applyWcSlotState(){
+  if(!player) return;
+  const hb = document.getElementById('hotbar');
+  if(!hb) return;
+  const slots = hb.querySelectorAll('.hb-slot');
+  for(let i = 0; i < slots.length; i++){
+    const item = typeof hotbar !== 'undefined' ? hotbar[i] : null;
+    const slot = slots[i];
+    if(item === 'wc'){
+      slot.classList.toggle('wc-depleted', player.wc <= 0);
+      let cdOv = slot.querySelector('.wc-cd-overlay');
+      if(player.wcCD > 0){
+        if(!cdOv){ cdOv = document.createElement('div'); cdOv.className='wc-cd-overlay'; slot.appendChild(cdOv); }
+        cdOv.textContent = (player.wcCD / 60).toFixed(1) + 's';
+      } else {
+        if(cdOv) cdOv.remove();
+      }
+    }
+  }
+}
+
+// ── Buy-phase banner: highlight the B key ────────────────────────────────
+function _patchBuyBanner(){
+  const b = document.getElementById('buy-phase-banner');
+  if(!b || !b.classList.contains('active')) return;
+  // textContent was just set by the economy patch - replace B with styled span
+  const raw = b.textContent;
+  if(raw.includes('PRESS B TO BUY')){
+    b.innerHTML = raw.replace(
+      'PRESS B TO BUY',
+      'PRESS <span class="buy-b-key">B</span> TO BUY'
+    );
+  }
+}
+
+// ── Respawn countdown in dead overlay ────────────────────────────────────
+function _updateRespawnLine(){
+  const ov = document.getElementById('dead-overlay');
+  if(!ov) return;
+  let rl = ov.querySelector('.dead-respawn');
+  if(!player || !player.dead){
+    if(rl) rl.style.display = 'none';
+    return;
+  }
+  if(!rl){
+    rl = document.createElement('div');
+    rl.className = 'dead-respawn';
+    ov.appendChild(rl);
+  }
+  rl.style.display = 'block';
+  const roundAlive = typeof roundActive !== 'undefined' && roundActive;
+  if(!roundAlive){
+    rl.textContent = 'Waiting for next round…';
+    return;
+  }
+  // Frames from death until character hides and respawn timer fires
+  const framesLeft = Math.max(0, (typeof DEATH_HIDE_FRAMES !== 'undefined' ? DEATH_HIDE_FRAMES : 114) - (player.deadT || 0));
+  if(framesLeft <= 0){
+    rl.textContent = 'Respawning…';
+  } else {
+    rl.textContent = 'Respawning in ' + (framesLeft / 60).toFixed(1) + 's';
+  }
+}
+
+// ── Controls hint: flash for 5 s on the very first round ─────────────────
+let _ctrlShown = false;
+function _flashControlsOnce(){
+  if(_ctrlShown) return;
+  _ctrlShown = true;
+  const ctrl = document.getElementById('ctrl');
+  if(!ctrl) return;
+  ctrl.style.setProperty('display','block','important');
+  ctrl.style.opacity = '1';
+  setTimeout(()=>{ ctrl.style.opacity = '0'; }, 4800);
+  setTimeout(()=>{ ctrl.style.removeProperty('display'); }, 5600);
+}
+
+// ── Hook into updateHUD (runs after every prior override) ────────────────
+const _prevHUD = updateHUD;
+updateHUD = function(){
+  _prevHUD();
+  _applyHpColour();
+  _applyAtkState();
+  _cleanFallMeter();
+  _applyWcSlotState();
+  _patchBuyBanner();
+};
+
+// ── Hook into updateScreenFX for respawn countdown ───────────────────────
+const _prevFX = updateScreenFX;
+updateScreenFX = function(){
+  _prevFX();
+  _updateRespawnLine();
+};
+
+// ── Hook into initRound for controls flash ───────────────────────────────
+const _prevIR = initRound;
+initRound = function(initial){
+  _prevIR(initial);
+  if(initial) _flashControlsOnce();
+};
+
+// ── Initial state application ─────────────────────────────────────────────
+try{ _applyHpColour(); }catch(e){}
+try{ _applyWcSlotState(); }catch(e){}
+
+})();
+</script>
 </body>
 </html>
