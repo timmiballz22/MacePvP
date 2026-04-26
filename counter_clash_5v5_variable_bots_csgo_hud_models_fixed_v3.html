@@ -38,6 +38,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
 .mc-nametag{position:absolute;display:none;transform:translate(-50%,-100%);
   padding:2px 8px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.18);
   color:#fff;font-size:13px;font-weight:bold;white-space:nowrap;
+  max-width:160px;overflow:hidden;text-overflow:ellipsis;
   text-shadow:2px 2px 0 #000,-2px 2px 0 #000,2px -2px 0 #000,-2px -2px 0 #000,0 0 2px #000;}
 
 /* ── HUD ── */
@@ -60,13 +61,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
   background:rgba(0,0,0,0.42);padding:3px 8px;}
 #hurt-tint{position:fixed;inset:0;pointer-events:none;z-index:998;opacity:0;
   background:radial-gradient(ellipse at center,rgba(200,0,0,0) 28%,rgba(180,0,0,0.82) 100%);}
-#dead-overlay{position:fixed;bottom:140px;left:50%;transform:translateX(-50%);
-  pointer-events:none;z-index:1001;display:none;text-align:center;}
-#dead-overlay .dead-msg{color:#FF7A7A;font-family:'Courier New',monospace;font-size:16px;font-weight:bold;
-  text-shadow:1px 1px 0 #000,-1px -1px 0 #000;background:rgba(0,0,0,0.55);padding:5px 16px;
-  border:1px solid rgba(255,80,80,0.4);letter-spacing:1px;}
+#dead-overlay{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;z-index:1001;display:none;text-align:center;min-width:260px;}
+#dead-overlay .dead-msg{color:#FF7A7A;font-family:'Courier New',monospace;font-size:18px;font-weight:bold;
+  text-shadow:1px 1px 0 #000,-1px -1px 0 #000;background:rgba(0,0,0,0.72);padding:8px 22px;
+  border:1px solid rgba(255,80,80,0.5);letter-spacing:1px;}
 #dead-overlay .spec-msg{color:#AAD4FF;font-family:'Courier New',monospace;font-size:12px;
-  text-shadow:1px 1px 0 #000;background:rgba(0,0,0,0.45);padding:3px 12px;
+  text-shadow:1px 1px 0 #000;background:rgba(0,0,0,0.58);padding:4px 14px;
   border:1px solid rgba(100,160,255,0.3);letter-spacing:.8px;margin-top:4px;}
 
 /* ── Hotbar Wrap ── */
@@ -98,13 +99,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
   border:2px solid #88BBFF;box-shadow:0 0 7px #88AAFF;}
 
 /* ── Combo / Announce ── */
-#combo{position:absolute;top:96px;left:50%;transform:translateX(-50%);
-  font-size:20px;color:#88EEFF;font-weight:bold;text-shadow:2px 2px 0 #000;
-  pointer-events:none;opacity:0;text-align:center;}
-#announce{position:fixed;top:36%;left:50%;transform:translate(-50%,-50%);
-  font-size:48px;font-weight:bold;color:#88EEFF;
+#combo{position:fixed;top:72px;left:50%;transform:translateX(-50%);
+  font-size:18px;color:#88EEFF;font-weight:bold;text-shadow:2px 2px 0 #000;
+  pointer-events:none;opacity:0;text-align:center;z-index:1050;white-space:nowrap;}
+#announce{position:fixed;top:34%;left:50%;transform:translate(-50%,-50%);
+  font-size:52px;font-weight:bold;color:#88EEFF;
   text-shadow:3px 3px 0 #000,-3px -3px 0 #000,0 0 30px #19D8FF;
-  pointer-events:none;opacity:0;z-index:1100;text-align:center;transition:opacity 0.2s;}
+  pointer-events:none;opacity:0;z-index:1100;text-align:center;transition:opacity 0.25s;}
 .dmg-num{position:fixed;font-family:'Courier New',monospace;font-size:20px;font-weight:bold;
   color:#FF3333;text-shadow:1px 1px 0 #000,-1px -1px 0 #000;
   pointer-events:none;animation:floatDmg 1.2s ease-out forwards;transform:translateX(-50%);white-space:nowrap;z-index:900;}
@@ -122,18 +123,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
   background:rgba(255,255,255,0.95);box-shadow:0 0 3px rgba(0,0,0,0.85);}
 #xh-l{left:-14px;width:9px;}
 #xh-r{left:5px;width:9px;}
-/* Hit flash states */
+/* Hit flash states — colour + spread */
+#xh-t,#xh-b,#xh-l,#xh-r{transition:top .12s ease,left .12s ease,background .08s;}
 #xhair.xh-hit #xh-t,#xhair.xh-hit #xh-b,
 #xhair.xh-hit #xh-l,#xhair.xh-hit #xh-r{background:rgba(255,50,50,1);}
+#xhair.xh-hit #xh-t{top:-19px;}
+#xhair.xh-hit #xh-b{top:10px;}
+#xhair.xh-hit #xh-l{left:-19px;}
+#xhair.xh-hit #xh-r{left:10px;}
 #xhair.xh-kill #xh-t,#xhair.xh-kill #xh-b,
 #xhair.xh-kill #xh-l,#xhair.xh-kill #xh-r{background:rgba(255,210,0,1);}
+#xhair.xh-kill #xh-t{top:-21px;}
+#xhair.xh-kill #xh-b{top:12px;}
+#xhair.xh-kill #xh-l{left:-21px;}
+#xhair.xh-kill #xh-r{left:12px;}
 #xhair-dot{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   width:2px;height:2px;background:rgba(255,255,255,0.9);border-radius:50%;
   pointer-events:none;box-shadow:0 0 3px rgba(0,0,0,0.9);}
-#atk-ind{position:fixed;top:calc(50% + 20px);left:50%;transform:translateX(-50%);
-  width:52px;height:8px;border:1px solid rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);
-  pointer-events:none;opacity:0.95;display:none;border-radius:2px;overflow:hidden;}
-#atk-fill{height:100%;width:100%;background:#FFFFFF;transform-origin:left center;transform:scaleX(0);}
+#atk-ind{position:fixed;top:calc(50% + 22px);left:50%;transform:translateX(-50%);
+  width:56px;height:6px;border:1px solid rgba(255,255,255,0.55);background:rgba(0,0,0,0.55);
+  pointer-events:none;opacity:0.95;display:none;border-radius:3px;overflow:hidden;}
+#atk-fill{height:100%;width:100%;background:#AAAAAA;transform-origin:left center;transform:scaleX(0);
+  transition:background 0.15s;}
+#atk-fill.ready{background:#7DFF4F;box-shadow:0 0 6px #44FF22;}
 
 /* ── Minecraft Inventory ── */
 #inv-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);display:none;
@@ -179,6 +191,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
 .kill-line .team-blue{color:#8CB7FF;}
 .kill-line .team-red{color:#FF8C8C;}
 .kill-line .kf-weapon{color:#FFF2A0;min-width:88px;text-align:center;}
+.kill-line .kf-name{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .menu-grid{display:flex;gap:12px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin:8px auto 2px;max-width:420px;}
 .menu-select{width:160px;padding:10px 12px;background:#111;border:2px solid #4488AA;color:#fff;
   font-family:'Courier New',monospace;font-size:15px;outline:none;}
@@ -246,7 +259,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
       <button class="play-btn secondary" id="quit-btn" type="button" style="display:none;">⏻ Quit to Menu</button>
     </div>
     <div id="menu-note" class="menu-note">
-      WASD move · Space jump · 1 Mace · 2 Knife · 3 WC (buy first) · B Buy menu · Esc pause
+      WASD move · Space jump · 1 Mace · 2 Knife · 3 WC (buy first) · B Buy menu · E Inventory · P View · Esc pause
     </div>
   </div>
 </div>
@@ -520,9 +533,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Co
     ent.pos.x+=ent.vel.x; resolveXZ(ent,'x');
     ent.pos.z+=ent.vel.z; resolveXZ(ent,'z');
     ent.pos.y+=ent.vel.y; resolveY(ent,wasOn);
-    ent.pos.x=Math.max(-44,Math.min(44,ent.pos.x));
-    ent.pos.z=Math.max(-44,Math.min(44,ent.pos.z));
-    if(ent.pos.y<-20) ent.hp=0;
+    ent.pos.x=Math.max(-200,Math.min(200,ent.pos.x));
+    ent.pos.z=Math.max(-200,Math.min(200,ent.pos.z));
+    if(ent.pos.y<-15) ent.hp=0;
   };
 
   updateBot = function(ent){
@@ -1042,7 +1055,7 @@ const MAPS = {
     name:'Snow Keep',
     sky:0x7EC8E3,
     fog:0x9FD8E8,
-    fogDensity:0.003,
+    fogDensity:0.005,
     blueSpawns:[[-90,2,-14],[-90,2,-7],[-90,2,0],[-90,2,7],[-90,2,14]],
     redSpawns:[[90,2,-14],[90,2,-7],[90,2,0],[90,2,7],[90,2,14]],
     blocks:[
@@ -1123,7 +1136,7 @@ const MAPS = {
     name:'Quarry Lane',
     sky:0x8AB0C8,
     fog:0x92AABD,
-    fogDensity:0.003,
+    fogDensity:0.005,
     blueSpawns:[[-93,2,-13],[-93,2,-6],[-93,2,0],[-93,2,6],[-93,2,13]],
     redSpawns:[[93,2,-13],[93,2,-6],[93,2,0],[93,2,6],[93,2,13]],
     blocks:[
@@ -1197,7 +1210,7 @@ const MAPS = {
     name:'Dust Temple',
     sky:0xD0B48A,
     fog:0xD8C29D,
-    fogDensity:0.003,
+    fogDensity:0.005,
     blueSpawns:[[-90,2,-12],[-90,2,-5],[-90,2,0],[-90,2,5],[-90,2,12]],
     redSpawns:[[90,2,-12],[90,2,-5],[90,2,0],[90,2,5],[90,2,12]],
     blocks:[
@@ -1501,7 +1514,7 @@ function setMenu(mode, extraText=''){
   if(mode==='start'){
     title.textContent='⚔ Counter Clash 5v5 ⚔';
     subtitle.innerHTML='Pick your <b style="color:#88EEFF">side</b>, lock a <b style="color:#88EEFF">map</b>, and win <b style="color:#88EEFF">'+ROUND_WIN_LIMIT+' rounds</b>.<br>Last team alive takes the round.';
-    note.textContent='WASD move · Space jump · 1 Mace · 2 Knife · 3 WC (buy first) · B Buy menu · E inventory · P view · Esc pause';
+    note.textContent='WASD move · Space jump · 1 Mace · 2 Knife · 3 WC (buy first) · B Buy menu · E Inventory · P View · Esc pause';
     nameRow.style.display='flex';
     if(sensRow)sensRow.style.display='flex';
     startBtn.style.display='inline-block';
@@ -1519,8 +1532,8 @@ function setMenu(mode, extraText=''){
     resumeBtn.style.display='inline-block';
     quitBtn.style.display='inline-block';
   }else if(mode==='gameover'){
-    title.textContent='🏆 Match Over';
-    subtitle.textContent=extraText||'A side won the match.';
+    title.textContent='Match Over';
+    subtitle.innerHTML=extraText||'A side won the match.';
     note.textContent='Change side or map and run it back.';
     nameRow.style.display='flex';
     if(sensRow)sensRow.style.display='flex';
@@ -1639,8 +1652,16 @@ function endMatch(winnerTeam){
   matchOver=true;
   roundActive=false;
   clearInputs();
-  const txt=TEAM_LABELS[winnerTeam]+' won '+roundScore[winnerTeam]+'-'+roundScore[winnerTeam==='blue'?'red':'blue']+'.';
-  setMenu('gameover',txt);
+  const loserTeam=winnerTeam==='blue'?'red':'blue';
+  const wColor=TEAM_UI_COLORS[winnerTeam];
+  const lColor=TEAM_UI_COLORS[loserTeam];
+  const didPlayerWin=player&&player.team===winnerTeam;
+  const headerTxt=didPlayerWin?'Victory!':'Defeat';
+  // Update menu title to show outcome
+  const titleEl=document.getElementById('menu-title');
+  if(titleEl){titleEl.textContent=(didPlayerWin?'🏆 ':'💀 ')+headerTxt;titleEl.style.color=didPlayerWin?'#88EEFF':'#FF7A7A';}
+  const scoreTxt=`<span style="color:${wColor};font-weight:bold">${TEAM_LABELS[winnerTeam]} ${roundScore[winnerTeam]}</span> — <span style="color:${lColor}">${roundScore[loserTeam]} ${TEAM_LABELS[loserTeam]}</span>`;
+  setMenu('gameover',scoreTxt);
   if(pointerLocked)document.exitPointerLock();
 }
 
@@ -1860,7 +1881,7 @@ function setActiveSlot(idx){
   const next=Math.max(0,Math.min(8,idx|0));
   if(next===activeSlot)return;
   activeSlot=next;
-  if(player)player.lastAtkMs=performance.now();
+  // Do NOT reset attack charge when switching weapons — annoying gameplay friction
   if(typeof _hotbarDirty!=='undefined')_hotbarDirty=true;
   buildHotbar();
   if(invOpen)buildInventoryUI();
@@ -1951,14 +1972,22 @@ function updateHUD(){
   const fill=document.getElementById('atk-fill');
   const charge=getAttackCharge(player);
   fill.style.transform='scaleX('+charge.toFixed(3)+')';
-  fill.style.opacity=charge>=0.985?'1':'0.8';
+  fill.style.opacity='1';
+  fill.classList.toggle('ready',charge>=0.99);
   const fall=getFall(player);
   const crit=isCrit(player);
   const smash=isSmash(fall,player.vel.y);
   let fallLabel=fall.toFixed(1)+' blk';
   if(smash)fallLabel+=' ⚡SMASH';
   else if(crit)fallLabel+=' ✦CRIT';
-  document.getElementById('fall-meter').textContent=(firstPerson?'1P':'3P')+' · ↓ '+fallLabel;
+  const fallMeterEl=document.getElementById('fall-meter');
+  if(player.pos.y<-2&&!player.onGround){
+    fallMeterEl.textContent='⚠ VOID ⚠';
+    fallMeterEl.style.color='#FF4444';
+  } else {
+    fallMeterEl.textContent=(firstPerson?'1P':'3P')+' · ↓ '+fallLabel;
+    fallMeterEl.style.color='';
+  }
 }
 
 // ─── Camera / FX ────────────────────────────────────────────
@@ -1994,7 +2023,9 @@ function updateScreenFX(){
   const lowHpBase=player.dead?0:Math.max(0,(0.35-hpFrac)/0.35);
   const pulseSpeed=lowHpBase>0.7?90:140;
   const lowHpPulse=lowHpBase*(0.08+0.06*(0.5+0.5*Math.sin(performance.now()/pulseSpeed)));
-  tint.style.opacity=Math.min(0.52,hurtTint+lowHpPulse).toFixed(3);
+  // Add void warning: screen turns darker when player is falling below ground level
+  const voidWarn=player&&!player.dead&&player.pos.y<-2?Math.min(0.5,((-2-player.pos.y)/12)):0;
+  tint.style.opacity=Math.min(0.68,hurtTint+lowHpPulse+voidWarn).toFixed(3);
 
   // Dead overlay: respawn timer + spectate label
   const deadOv=document.getElementById('dead-overlay');
@@ -2003,15 +2034,17 @@ function updateScreenFX(){
   if(deadOv&&deadMsg&&specMsg){
     if(player.dead&&menuState==='none'){
       deadOv.style.display='block';
-      // Estimate frames until respawn (DEATH_HIDE_FRAMES → respawn)
-      const framesLeft=Math.max(0,RESPAWN_DELAY_MS/16.7-player.deadT);
-      const secsLeft=Math.ceil(framesLeft*16.7/1000);
-      deadMsg.textContent=secsLeft>0?`DEAD · Respawning in ${secsLeft}s`:'DEAD · Waiting for round...';
-      // Spectate info (uses spectateTarget from patch scope or team-status text)
+      // Show alive-count status; no individual respawn in this mode
+      const blueAlive=getAliveCount('blue');
+      const redAlive=getAliveCount('red');
+      const roundEnd = blueAlive===0||redAlive===0;
+      const aliveMsg = roundEnd ? 'Round ending...' : `${blueAlive}B vs ${redAlive}R remaining`;
+      deadMsg.textContent=`YOU DIED · ${aliveMsg}`;
+      // Spectate info (from team-status or direct spectate target name)
       const ts=document.getElementById('team-status');
       const specText=ts&&ts.textContent.includes('SPECTATING')?ts.textContent.split('SPECTATING')[1].trim():'';
-      specMsg.textContent=specText?'SPECTATING '+specText:'';
-      specMsg.style.display=specText?'block':'none';
+      specMsg.textContent=specText?'SPECTATING '+specText:'Press [P] to toggle view';
+      specMsg.style.display='block';
     } else {
       deadOv.style.display='none';
     }
@@ -2023,13 +2056,20 @@ function getLookDir(){
   return _lookDir.set(sy*cp,sp,cy*cp);
 }
 function getEyePos(ent,out){return out.set(ent.pos.x,ent.pos.y+EYE_H,ent.pos.z);}
+let _lastLoopT=0;
 function updateCamera(){
   if(!player)return;
   getLookDir();
   getEyePos(player,_eyePos);
-  const sx=camShake*(Math.random()-.5)*0.3;
-  const sy2=camShake*(Math.random()-.5)*0.3;
-  const sz=camShake*(Math.random()-.5)*0.3;
+  // Frame-time normalised shake so it feels the same at any FPS
+  const now=performance.now();
+  const dt=Math.min(50,now-(_lastLoopT||now));
+  _lastLoopT=now;
+  const dtScale=dt/16.667;
+  const shakeScale=camShake*0.22;
+  const sx=shakeScale*(Math.random()-.5);
+  const sy2=shakeScale*(Math.random()-.5);
+  const sz=shakeScale*(Math.random()-.5);
   if(firstPerson){
     camera.position.set(_eyePos.x+sx,_eyePos.y+sy2,_eyePos.z+sz);
   } else {
@@ -2041,7 +2081,7 @@ function updateCamera(){
     camera.up.set(sign*Math.sin(camYaw),0,sign*Math.cos(camYaw));
   } else camera.up.set(0,1,0);
   camera.lookAt(_eyeTarget);
-  camShake=Math.max(0,camShake-0.012);
+  camShake=Math.max(0,camShake-0.014*dtScale);
 }
 
 // ─── Physics ────────────────────────────────────────────────
@@ -2089,7 +2129,7 @@ function stepEnt(ent){
   ent.pos.y+=ent.vel.y; resolveY(ent,wasOn);
   ent.pos.x=Math.max(-200,Math.min(200,ent.pos.x));
   ent.pos.z=Math.max(-200,Math.min(200,ent.pos.z));
-  if(ent.pos.y<-30)ent.hp=0;
+  if(ent.pos.y<-15)ent.hp=0;
 }
 function trackPeak(ent){
   if(!ent.onGround&&ent.pos.y>ent.peakY)ent.peakY=ent.pos.y;
@@ -2366,7 +2406,7 @@ function spawnDmgNum(pos3d,dmg,smash,crit,fall,override=''){
     cls+=' smash';
     const base=crit?8:5;
     const bonus=Math.floor(fall)*3;
-    label=`⚡ ${dmg} (${base}+${bonus})`;
+    label=`⚡ ${dmg}`;
   } else if(crit){
     cls+=' crit';
     label=`✦ ${dmg}`;
@@ -2374,7 +2414,16 @@ function spawnDmgNum(pos3d,dmg,smash,crit,fall,override=''){
     label=`${dmg}`;
   }
   e.className=cls;
-  e.style.left=sc.x+'px';e.style.top=sc.y+'px';
+  // Scale font by damage (heavier hits look bigger)
+  if(!smash&&!crit&&!override){
+    const sz=Math.min(34,Math.max(16,16+dmg*0.28));
+    e.style.fontSize=sz.toFixed(0)+'px';
+  }
+  // Clamp position to screen interior so numbers never fly off-edge
+  const margin=36;
+  const sx=Math.max(margin,Math.min(innerWidth-margin,sc.x));
+  const sy=Math.max(margin,Math.min(innerHeight-margin,sc.y));
+  e.style.left=sx+'px';e.style.top=sy+'px';
   e.textContent=label;
   document.body.appendChild(e);
   setTimeout(()=>e.remove(),1300);
@@ -2549,6 +2598,7 @@ function addKillFeed(killer,victim,weapon,meta){
 function markDeath(ent){
   if(ent.dead)return;
   ent.dead=true; ent.deadT=0; ent.hp=0;
+  if(ent===player) player.deathMs=performance.now();
   const killer=ent.lastAttacker;
   const weapon=ent.lastDamageType || 'void';
   addKillFeed(killer,ent,weapon,ent.lastDamageMeta||{});
@@ -2867,11 +2917,26 @@ function updateBot(ent){
 }
 
 // ─── Main Loop ──────────────────────────────────────────────
+let _prevFreezeCount=-1;
 function loop(){
   requestAnimationFrame(loop);
   if(matchStarted&&menuState==='none'&&!matchOver&&player){
     if(freezeFrames>0){
+      const buyActive=typeof buyPhaseFrames!=='undefined'&&buyPhaseFrames>0;
       freezeFrames--;
+      // Show 3-2-1 FIGHT! countdown during final ~51 frames of non-buy freeze
+      if(!buyActive&&freezeFrames<=51&&freezeFrames>0){
+        const countNum=Math.ceil(freezeFrames/17);
+        if(_prevFreezeCount!==countNum){
+          _prevFreezeCount=countNum;
+          const ann=document.getElementById('announce');
+          if(ann){ann.textContent=String(countNum);ann.style.color='#FFFFFF';ann.style.opacity='1';}
+        }
+      }
+      if(!buyActive&&freezeFrames===0&&roundActive){
+        _prevFreezeCount=-1;
+        announce('FIGHT!','#FFE066');
+      }
       for(const ent of allEntities){
         ent.vel.x*=0.65; ent.vel.z*=0.65;
         if(ent.atkCD>0)ent.atkCD--; if(ent.wcCD>0)ent.wcCD--;
@@ -3459,11 +3524,13 @@ loop();
       ent.vel.x+=pushX; ent.vel.z+=pushZ; ent.vel.y=Math.max(ent.vel.y,0)+pushY;
       clampXZVel(ent,burstBelowFeet?MOVE_SPD*1.75:MOVE_SPD*3.0);
       ent.onGround=false; ent.peakY=ent.pos.y;
-      if(ent!==pr.ownerEnt&&ent.iframe<=0&&dist3d<0.65){
-        const dmg = 1 * HP_SCALE;
+      // WC deals falloff-scaled damage (up to 12 HP at dead-center, ~3 at edge)
+      if(ent!==pr.ownerEnt&&ent.iframe<=0){
+        const dmg = Math.max(1*HP_SCALE, Math.round(falloff * 12 * HP_SCALE / 5));
         ent.hp=Math.max(0,ent.hp-dmg); ent.iframe=IFRAME;
         noteDamage(pr.ownerEnt,ent,'wc',{dmg,burst:true});
-        if(ent===player){triggerPlayerTint(0.42);camShake=Math.max(camShake,0.07);}        
+        spawnDmgNum(ent.pos.clone().add(new THREE.Vector3(0,1.2,0)),dmg,false,false,0,'🌀');
+        if(ent===player){triggerPlayerTint(0.42+falloff*0.3);camShake=Math.max(camShake,0.10+falloff*0.08);}
       }
     }
   };
@@ -4562,6 +4629,20 @@ window.__ECON = {
 
 /* ── Announce text – tighter padding, max-width ─────────────── */
 #announce{max-width:680px;line-height:1.15;padding:0 12px;}
+
+/* ── Attack-ready indicator glow ────────────────────────────── */
+@keyframes readyPulse{0%,100%{opacity:1}50%{opacity:0.65}}
+#atk-fill.ready{animation:readyPulse 0.5s ease-in-out infinite;}
+
+/* ── Streak overlay sits below announce so it doesn't collide ── */
+#streak-overlay{top:44% !important;}
+
+/* ── Score bar – team colours on score digits ────────────────── */
+#score-blue{color:#8CB7FF;font-size:22px;}
+#score-red{color:#FF8C8C;font-size:22px;}
+
+/* ── Void flash on hurt-tint – make it slightly purple ──────── */
+#hurt-tint{background:radial-gradient(ellipse at center,rgba(200,0,0,0) 20%,rgba(160,0,0,0.88) 100%) !important;}
 </style>
 
 <script>
