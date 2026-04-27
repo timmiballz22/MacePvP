@@ -4904,5 +4904,420 @@ _buildPips();
 
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     POLISH PASS — Deep UX / Visual Overhaul
+     Fixes: dead screen, announce spam, ctrl hint, crosshair,
+            attack-charge bar, FP viewmodel, fall meter, pips,
+            WC row, hotbar CD drain, smash VFX, buy menu labels,
+            team-status clutter, score-sep clutter, banner ticking
+     ═══════════════════════════════════════════════════════════════ -->
+<style id="polish-pass">
+
+/* ── Round pips: 10 px – easier to count ─────────────────── */
+.rpip{width:10px!important;height:10px!important;}
+
+/* ── Dead screen: centered, readable ────────────────────────
+   Override the bottom:140px hard-coded in the HTML                */
+#dead-overlay{
+  position:fixed!important;
+  bottom:unset!important;
+  top:42%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+}
+#dead-overlay .dead-msg{
+  font-size:26px!important;
+  letter-spacing:2px!important;
+  padding:10px 28px!important;
+  border-width:2px!important;
+}
+#dead-overlay .spec-msg{font-size:13px!important;}
+#dead-overlay .dead-killer{font-size:12px!important;}
+
+/* ── WC row: hide when player has no wind charges ───────── */
+#wc-row.wc-hidden{display:none!important;}
+
+/* ── Hotbar cooldown drain (top-down overlay on active slot) */
+#hb-cd-drain{
+  position:fixed;
+  pointer-events:none;
+  z-index:1001;
+  background:rgba(0,0,0,0.60);
+  transition:height 0.04s linear, opacity 0.12s;
+}
+
+/* ── Crosshair: green when attack is ready + target nearby ─ */
+#xhair.atk-ready #xh-t,#xhair.atk-ready #xh-b,
+#xhair.atk-ready #xh-l,#xhair.atk-ready #xh-r{
+  background:rgba(80,255,80,0.96)!important;
+  box-shadow:0 0 5px rgba(50,220,50,0.55)!important;
+}
+/* Wider gap when target in melee range */
+#xhair.enemy-close #xh-t{top:-18px!important;}
+#xhair.enemy-close #xh-b{top:7px!important;}
+#xhair.enemy-close #xh-l{left:-18px!important;}
+#xhair.enemy-close #xh-r{left:7px!important;}
+
+/* ── Attack charge bar: colour-coded progress ───────────── */
+#atk-ind{height:6px!important;width:58px!important;}
+#atk-fill.cf-empty  {background:#441111!important;}
+#atk-fill.cf-low    {background:linear-gradient(90deg,#992200,#DD4400)!important;}
+#atk-fill.cf-mid    {background:linear-gradient(90deg,#BB6600,#FFAA00)!important;}
+#atk-fill.cf-ready  {background:#44FF55!important;box-shadow:0 0 6px rgba(50,230,50,0.5)!important;}
+
+/* ── FP weapon viewmodel canvas ─────────────────────────── */
+#fp-vmodel{
+  position:fixed;
+  bottom:92px;
+  right:16px;
+  pointer-events:none;
+  z-index:990;
+  image-rendering:pixelated;
+  filter:drop-shadow(2px 4px 6px rgba(0,0,0,0.7));
+}
+
+/* ── Controls hint: auto-fade via JS ────────────────────── */
+#ctrl{transition:opacity 1.5s ease!important;}
+
+/* ── Damage formula: collapsed by default ───────────────── */
+#dmg-formula{
+  cursor:pointer!important;
+  user-select:none!important;
+  transition:opacity 0.35s, max-height 0.3s!important;
+  overflow:hidden!important;
+  max-height:80px;
+}
+#dmg-formula.dm-col{
+  opacity:0.20!important;
+  max-height:17px!important;
+}
+#dmg-formula.dm-col:hover{opacity:0.60!important;}
+#dmg-formula .dm-hint{
+  font-size:9px;color:#7ACFFF;margin-top:2px;
+  display:none;line-height:1;
+}
+#dmg-formula.dm-col .dm-hint{display:block;}
+
+/* ── Buy banner: better ticking at < 4 s ────────────────── */
+@keyframes buyUrgent{0%,100%{opacity:1;transform:translateX(-50%) scale(1)}
+  50%{opacity:0.6;transform:translateX(-50%) scale(1.04)}}
+#buy-phase-banner.urgent{
+  animation:buyUrgent 0.65s ease-in-out infinite!important;
+  color:#FF6622!important;border-color:#CC4400!important;
+  font-size:14px!important;
+  box-shadow:0 0 14px rgba(255,80,0,0.45)!important;
+}
+
+/* ── Score separator: smaller, less intrusive ───────────── */
+#score-sep{font-size:10px!important;color:#666!important;margin:0 6px!important;}
+
+/* ── Team status: smaller, dimmer ───────────────────────── */
+#team-status{font-size:10px!important;opacity:0.72!important;padding:2px 10px!important;}
+
+/* ── Killfeed: tighter ───────────────────────────────────── */
+#killfeed{width:280px!important;}
+.kill-line{padding:4px 8px!important;font-size:11px!important;}
+
+/* ── HUD health bar: slightly taller ────────────────────── */
+.hp-bg{width:190px!important;height:13px!important;}
+
+/* ── Buy def tag ─────────────────────────────────────────── */
+.pd-def{color:#85CCFF;font-size:10px;opacity:0.82;margin-right:6px;}
+
+</style>
+
+<script>
+/* Polish Pass — all fixes in one IIFE */
+(function(){
+'use strict';
+
+// ── 1. Auto-hide controls hint (8 s) ─────────────────────────
+const _ctrl = document.getElementById('ctrl');
+if(_ctrl){
+  setTimeout(()=>{ _ctrl.style.opacity='0'; _ctrl.style.pointerEvents='none'; }, 8000);
+}
+
+// ── 2. Dead overlay: center it via JS (overrides inline style) ─
+(function(){
+  const ov = document.getElementById('dead-overlay');
+  if(!ov) return;
+  ov.style.bottom = 'unset';
+  ov.style.top    = '42%';
+  ov.style.left   = '50%';
+  ov.style.transform = 'translate(-50%,-50%)';
+})();
+
+// ── 3. Damage formula: collapsed by default, click to toggle ──
+(function(){
+  const fm = document.getElementById('dmg-formula');
+  if(!fm) return;
+  const hint = document.createElement('div');
+  hint.className = 'dm-hint';
+  hint.textContent = '⚒ dmg info (click)';
+  fm.appendChild(hint);
+  fm.classList.add('dm-col');
+  fm.title = 'Click to expand damage formula';
+  fm.addEventListener('click', ()=> fm.classList.toggle('dm-col'));
+})();
+
+// ── 4. FP weapon viewmodel (canvas) ──────────────────────────
+const _fpC = document.createElement('canvas');
+_fpC.id = 'fp-vmodel';
+_fpC.width = 200; _fpC.height = 150;
+document.body.appendChild(_fpC);
+const _fpX = _fpC.getContext('2d');
+
+function _drawMace(ctx, t, mv){
+  const bob = mv ? Math.sin(t*7)*4.5 : Math.sin(t*1.5)*1.8;
+  const tlt = mv ? Math.cos(t*3.5)*4 : 0;
+  ctx.save(); ctx.translate(0, bob); ctx.rotate(tlt*Math.PI/180);
+  // handle
+  ctx.strokeStyle='#6A4A2B'; ctx.lineWidth=12; ctx.lineCap='round';
+  ctx.shadowColor='rgba(0,0,0,0.75)'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.moveTo(168,155); ctx.lineTo(88,68); ctx.stroke();
+  ctx.shadowBlur=0;
+  // head
+  ctx.fillStyle='#9BAAB5'; ctx.strokeStyle='#6A7A84'; ctx.lineWidth=2;
+  ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=12;
+  ctx.fillRect(56,40,48,48); ctx.strokeRect(56,40,48,48);
+  // top face highlight
+  ctx.shadowBlur=0; ctx.fillStyle='#BCC8D3'; ctx.fillRect(56,40,48,9);
+  // spikes
+  ctx.fillStyle='#DCE8F0';
+  [[56,40],[104,40],[56,88],[104,88],[80,30],[80,98]].forEach(([sx,sy])=>{
+    ctx.beginPath(); ctx.arc(sx,sy,6.5,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+function _drawKnife(ctx, t, mv){
+  const bob = mv ? Math.sin(t*7)*4.5 : Math.sin(t*1.5)*1.8;
+  ctx.save(); ctx.translate(0, bob);
+  // handle
+  ctx.fillStyle='#3A2A18'; ctx.strokeStyle='#1A0E08'; ctx.lineWidth=2;
+  ctx.shadowColor='rgba(0,0,0,0.75)'; ctx.shadowBlur=10;
+  ctx.fillRect(126,108,38,52); ctx.strokeRect(126,108,38,52); ctx.shadowBlur=0;
+  // guard
+  ctx.fillStyle='#5C4A36'; ctx.fillRect(118,104,54,8);
+  // blade
+  ctx.fillStyle='#CDD8E0'; ctx.strokeStyle='#8899AA'; ctx.lineWidth=1;
+  ctx.shadowColor='rgba(0,0,0,0.5)'; ctx.shadowBlur=8;
+  ctx.beginPath(); ctx.moveTo(126,104); ctx.lineTo(145,24); ctx.lineTo(164,104); ctx.closePath();
+  ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  // shine
+  ctx.strokeStyle='rgba(255,255,255,0.50)'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(132,102); ctx.lineTo(147,30); ctx.stroke();
+  ctx.restore();
+}
+
+function _drawWC(ctx, t){
+  const pulse = 0.93+0.07*Math.sin(t*4.3);
+  const cx=132, cy=80, r=42*pulse;
+  // glow
+  const go=ctx.createRadialGradient(cx,cy,r*0.4,cx,cy,r*1.6);
+  go.addColorStop(0,'rgba(100,160,255,0.14)'); go.addColorStop(1,'rgba(30,70,200,0)');
+  ctx.fillStyle=go; ctx.beginPath(); ctx.arc(cx,cy,r*1.6,0,Math.PI*2); ctx.fill();
+  // core
+  const gc=ctx.createRadialGradient(cx-r*0.28,cy-r*0.28,r*0.08,cx,cy,r);
+  gc.addColorStop(0,'rgba(225,238,255,0.97)');
+  gc.addColorStop(0.32,'rgba(130,175,255,0.90)');
+  gc.addColorStop(0.72,'rgba(55,100,225,0.82)');
+  gc.addColorStop(1,'rgba(18,50,185,0.50)');
+  ctx.fillStyle=gc; ctx.shadowColor='rgba(80,130,255,0.85)'; ctx.shadowBlur=22;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  // sparkles
+  ctx.strokeStyle='rgba(185,215,255,0.78)'; ctx.lineWidth=1.5;
+  for(let i=0;i<6;i++){
+    const a=(i/6)*Math.PI*2+t*1.9;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a)*r*0.62,cy+Math.sin(a)*r*0.62);
+    ctx.lineTo(cx+Math.cos(a)*r*1.08,cy+Math.sin(a)*r*1.08);
+    ctx.stroke();
+  }
+}
+
+function _updateFP(){
+  const show = typeof firstPerson!=='undefined'&&firstPerson &&
+               typeof menuState!=='undefined'&&menuState==='none' &&
+               typeof pointerLocked!=='undefined'&&pointerLocked &&
+               player&&!player.dead;
+  _fpC.style.display = show?'block':'none';
+  if(!show) return;
+  const t=performance.now()/1000;
+  const mv=!!(player&&(Math.abs(player.vel.x)>0.01||Math.abs(player.vel.z)>0.01));
+  _fpX.clearRect(0,0,200,150);
+  const item=typeof selectedItem==='function'?selectedItem():'mace';
+  if(item==='mace')      _drawMace(_fpX,t,mv);
+  else if(item==='knife')_drawKnife(_fpX,t,mv);
+  else if(item==='wc')   _drawWC(_fpX,t);
+}
+
+// ── 5. Hotbar cooldown drain element ─────────────────────────
+const _cdEl = document.createElement('div');
+_cdEl.id = 'hb-cd-drain';
+document.body.appendChild(_cdEl);
+
+function _updateCDDrain(){
+  if(!player||player.dead||typeof menuState==='undefined'||menuState!=='none'){
+    _cdEl.style.display='none'; return;
+  }
+  const ai=typeof activeSlot!=='undefined'?activeSlot:0;
+  const item=typeof hotbar!=='undefined'?hotbar[ai]:null;
+  const charge=typeof getAttackCharge==='function'?getAttackCharge(player):1;
+  if(!item||item==='wc'||charge>=0.995){ _cdEl.style.display='none'; return; }
+  const hb=document.getElementById('hotbar');
+  if(!hb){ _cdEl.style.display='none'; return; }
+  const sl=hb.children[ai];
+  if(!sl){ _cdEl.style.display='none'; return; }
+  const r=sl.getBoundingClientRect();
+  const drainH=r.height*(1-charge);
+  _cdEl.style.cssText=`position:fixed;pointer-events:none;z-index:1001;
+    background:rgba(0,0,0,0.60);
+    left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${drainH}px;display:block;`;
+}
+
+// ── 6. Crosshair: ready colour + gap expand on enemy nearby ──
+function _updateXhair(){
+  const xh=document.getElementById('xhair');
+  if(!xh) return;
+  // Don't override hit-flash states
+  if(xh.classList.contains('xh-hit')||xh.classList.contains('xh-kill')){
+    xh.classList.remove('atk-ready','enemy-close'); return;
+  }
+  if(!player||player.dead||typeof menuState==='undefined'||menuState!=='none'){
+    xh.classList.remove('atk-ready','enemy-close'); return;
+  }
+  const charge=typeof getAttackCharge==='function'?getAttackCharge(player):1;
+  const ready=charge>=0.985&&player.atkCD===0;
+  const item=typeof selectedItem==='function'?selectedItem():'mace';
+  const rng=item==='knife'?(typeof KNIFE_RANGE!=='undefined'?KNIFE_RANGE:2.15)
+                          :(typeof ATK_RANGE!=='undefined'?ATK_RANGE:3.2);
+  const tgt=typeof pickMeleeTarget==='function'?pickMeleeTarget(player,rng):null;
+  xh.classList.toggle('atk-ready', ready&&!!tgt);
+  xh.classList.toggle('enemy-close', !!tgt);
+}
+
+// ── 7. Attack charge bar colour ───────────────────────────────
+function _updateAtkBar(){
+  const fill=document.getElementById('atk-fill');
+  if(!fill||!player) return;
+  const c=typeof getAttackCharge==='function'?getAttackCharge(player):1;
+  fill.classList.remove('cf-empty','cf-low','cf-mid','cf-ready');
+  if(c<0.02)      fill.classList.add('cf-empty');
+  else if(c<0.45) fill.classList.add('cf-low');
+  else if(c<0.97) fill.classList.add('cf-mid');
+  else            fill.classList.add('cf-ready');
+}
+
+// ── 8. WC row visibility ──────────────────────────────────────
+function _updateWCRow(){
+  const wr=document.getElementById('wc-row');
+  if(!wr||!player) return;
+  const has=player.wc>0||(typeof hotbar!=='undefined'&&hotbar.includes('wc'));
+  wr.classList.toggle('wc-hidden',!has);
+}
+
+// ── 9. Fall meter: strip redundant "1P · " / "3P · " prefix ──
+// + Team status: strip " · First to N"
+// + Score sep: simplify to round only
+// + Buy banner urgent ticking at ≤ 4 s
+function _cleanHUD(){
+  // Fall meter
+  const fm=document.getElementById('fall-meter');
+  if(fm&&player&&!player.dead){
+    fm.textContent=fm.textContent.replace(/^[13]P\s*·\s*/,'');
+  }
+  // Team status
+  const ts=document.getElementById('team-status');
+  if(ts) ts.textContent=ts.textContent.replace(/\s*·\s*First to \d+/,'');
+  // Score separator — just "· Rn ·"
+  const sep=document.getElementById('score-sep');
+  if(sep&&typeof roundNumber!=='undefined'){
+    const want=` · R${roundNumber} · `;
+    if(sep.textContent!==want) sep.textContent=want;
+  }
+  // Buy banner urgent class
+  const bb=document.getElementById('buy-phase-banner');
+  if(bb&&bb.classList.contains('active')){
+    const m=bb.textContent.match(/(\d+)s/);
+    const s=m?parseInt(m[1]):99;
+    bb.classList.toggle('urgent', s<=4);
+    bb.classList.toggle('ticking', s<=4); // keep old class too
+  }
+}
+
+// ── 10. Suppress bot-vs-bot kill announcements ────────────────
+// Only suppress the "Name down" announce from bot-vs-bot kills;
+// round/match/economy announcements are never inside markDeath.
+const _md_pp = markDeath;
+markDeath = function(ent){
+  if(!ent||ent.dead) return;
+  const involvedPlayer = (ent===player)||(ent.lastAttacker===player);
+  if(!involvedPlayer){
+    const _a=announce;
+    announce=function(){};   // mute announce for this call only
+    _md_pp(ent);
+    announce=_a;
+  } else {
+    _md_pp(ent);
+  }
+};
+
+// ── 11. Smash VFX at DEFENDER position (not attacker) ────────
+const _tm_pp = tryMace;
+tryMace = function(atk, def){
+  // Capture defender pos before the call mutates it
+  const defSnap = def&&!def.dead ? def.pos.clone() : null;
+  const hit = _tm_pp(atk, def);
+  // The slam VFX was spawned at atk.pos inside tryMace.
+  // If this was a smash hit, add a second ring at the defender's location.
+  if(hit && defSnap && def && typeof spawnSlamVFX==='function'){
+    const fall=typeof getFall==='function'?getFall(atk):0;
+    const smash=typeof isSmash==='function'?isSmash(fall,atk.vel.y):false;
+    if(smash) spawnSlamVFX(defSnap.add(new THREE.Vector3(0,0.15,0)), true);
+  }
+  return hit;
+};
+
+// ── 12. Buy menu: add defense/stat labels ────────────────────
+if(typeof renderBuyItems==='function'){
+  const _rbi_pp=renderBuyItems;
+  renderBuyItems=function(){
+    _rbi_pp();
+    const host=document.getElementById('buy-items');
+    if(!host) return;
+    const stats=['×4','12 DEF','18 DEF','22 DEF','1× SAVE'];
+    host.querySelectorAll('.buy-btn').forEach((btn,i)=>{
+      if(btn.querySelector('.pd-def')) return;
+      const pe=btn.querySelector('.buy-btn-price');
+      if(!pe) return;
+      const t=document.createElement('span');
+      t.className='pd-def';
+      t.textContent=stats[i]||'';
+      pe.parentNode.insertBefore(t,pe);
+    });
+  };
+}
+
+// ── 13. Hook everything into updateHUD ───────────────────────
+const _hud_pp=updateHUD;
+updateHUD=function(){
+  _hud_pp();
+  _updateFP();
+  _updateCDDrain();
+  _updateXhair();
+  _updateAtkBar();
+  _updateWCRow();
+  _cleanHUD();
+};
+
+// ── Initial state ─────────────────────────────────────────────
+_fpC.style.display='none';
+_cdEl.style.display='none';
+_updateWCRow();
+
+})();
+</script>
 </body>
 </html>
