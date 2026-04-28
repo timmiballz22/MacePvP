@@ -877,7 +877,8 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'h
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputEncoding=THREE.sRGBEncoding;
-renderer.shadowMap.enabled=false;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x7EC8E3);
@@ -886,9 +887,15 @@ scene.fog=new THREE.FogExp2(0x9FD8E8,0.008);
 const camera=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,0.05,600);
 camera.rotation.order='YXZ';
 
-const ambLight=new THREE.AmbientLight(0xFFFFDD,0.75); scene.add(ambLight);
-const sunLight=new THREE.DirectionalLight(0xFFEEBB,1.15); sunLight.position.set(50,80,30); scene.add(sunLight);
-const fillLight=new THREE.DirectionalLight(0x88CCAA,0.40); fillLight.position.set(-20,10,-40); scene.add(fillLight);
+const ambLight=new THREE.AmbientLight(0xC8DCFF,0.62); scene.add(ambLight);
+const sunLight=new THREE.DirectionalLight(0xFFF4D8,1.35); sunLight.position.set(50,80,30); scene.add(sunLight);
+sunLight.castShadow=true;
+sunLight.shadow.mapSize.width=2048; sunLight.shadow.mapSize.height=2048;
+sunLight.shadow.camera.near=10; sunLight.shadow.camera.far=450;
+sunLight.shadow.camera.left=-140; sunLight.shadow.camera.right=140;
+sunLight.shadow.camera.top=140; sunLight.shadow.camera.bottom=-140;
+sunLight.shadow.bias=-0.0005;
+const fillLight=new THREE.DirectionalLight(0x88BBDD,0.38); fillLight.position.set(-20,10,-40); scene.add(fillLight);
 
 window.addEventListener('resize',()=>{
   renderer.setSize(innerWidth,innerHeight);
@@ -907,125 +914,130 @@ function mkMat(color, emissiveHex=0x000000){
   m.emissive.setHex(emissiveHex);
   return m;
 }
+function mkMatPhong(color,shininess=55,emissiveHex=0x000000){
+  const m=new THREE.MeshPhongMaterial({color,shininess,specular:0x334455});
+  m.emissive.setHex(emissiveHex);
+  return m;
+}
 
 // ─── Canvas Textures ────────────────────────────────────────
 function mkTex(fn){
   const s=64,c=document.createElement('canvas');c.width=c.height=s;
   const x=c.getContext('2d'); fn(x,s);
   const t=new THREE.CanvasTexture(c);
+  t.magFilter=THREE.NearestFilter; t.minFilter=THREE.NearestFilter;
   t.wrapS=t.wrapT=THREE.RepeatWrapping; return t;
 }
+// Helper: draw Minecraft-style 8x8 block grid on canvas
+function _mcGrid(x,s,colors,darken){
+  const bs=8;
+  for(let by=0;by<s;by+=bs)for(let bx=0;bx<s;bx+=bs){
+    const c=colors[Math.random()*colors.length|0];
+    x.fillStyle=c; x.fillRect(bx,by,bs,bs);
+    if(darken){x.fillStyle='rgba(0,0,0,0.14)';x.fillRect(bx+bs-1,by,1,bs);x.fillRect(bx,by+bs-1,bs,1);}
+  }
+}
 
-// Grass texture — green Minecraft style
+// Grass — vivid Minecraft green top
 const TEX_GRASS=mkTex((x,s)=>{
-  x.fillStyle='#5B8731';x.fillRect(0,0,s,s);
-  for(let i=0;i<120;i++){
-    const g=Math.random();
-    x.fillStyle=g>.7?'#4A7A28':g>.4?'#6B9B38':'#7DAD45';
-    x.fillRect(Math.random()*s|0,Math.random()*s|0,3,3);
-  }
-  x.strokeStyle='rgba(0,0,0,0.12)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#5A9626','#4D8A1E','#62A42C','#56902A','#6CB234','#489018'],true);
+  for(let i=0;i<40;i++){x.fillStyle=Math.random()>.5?'#78C840':'#3A7814';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,4);}
+  x.fillStyle='rgba(0,0,0,0.20)';x.fillRect(0,s-2,s,2);
 });
 
-// Dirt texture
+// Dirt — warm brown with clay pockets
 const TEX_DIRT=mkTex((x,s)=>{
-  x.fillStyle='#8B6914';x.fillRect(0,0,s,s);
-  for(let i=0;i<80;i++){
-    x.fillStyle=Math.random()>.5?'#7A5A10':'#9C7A1E';
-    x.fillRect(Math.random()*s|0,Math.random()*s|0,3,3);
-  }
-  x.strokeStyle='rgba(0,0,0,0.18)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#8B5E14','#7A5210','#9C6E1E','#A07222','#6E4A0C'],true);
+  for(let i=0;i<30;i++){x.fillStyle=Math.random()>.5?'#5A3808':'#B08432';x.fillRect(Math.random()*s|0,Math.random()*s|0,3,2);}
 });
 
-// Stone texture
+// Stone — precise block pattern with cracks
 const TEX_STONE=mkTex((x,s)=>{
-  x.fillStyle='#8A8A8A';x.fillRect(0,0,s,s);
-  for(let i=0;i<80;i++){x.fillStyle=Math.random()>.5?'#797979':'#9B9B9B';x.fillRect(Math.random()*s|0,Math.random()*s|0,3,3);}
-  x.strokeStyle='rgba(0,0,0,0.28)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#7A7A7A','#868686','#6E6E6E','#909090','#7E7E7E'],true);
+  x.fillStyle='rgba(255,255,255,0.12)';
+  for(let i=0;i<20;i++)x.fillRect(Math.random()*s|0,Math.random()*s|0,Math.random()*6+2|0,1);
+  x.fillStyle='rgba(0,0,0,0.20)';
+  for(let i=0;i<12;i++)x.fillRect(Math.random()*s|0,Math.random()*s|0,Math.random()*4+1|0,1);
 });
 
-// Oak wood texture
+// Oak wood — rich dark rings
 const TEX_OAK=mkTex((x,s)=>{
-  x.fillStyle='#6B4226';x.fillRect(0,0,s,s);
-  for(let i=0;i<12;i++){
-    x.fillStyle='rgba(90,55,25,0.5)';
-    x.fillRect(0,Math.random()*s|0,s,2);
-  }
-  x.strokeStyle='rgba(0,0,0,0.15)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  x.fillStyle='#5C3618';x.fillRect(0,0,s,s);
+  const ringCols=['#4A2A10','#7A4E28','#6A3E20','#8C5E34'];
+  for(let i=0;i<14;i++){x.fillStyle=ringCols[i%ringCols.length];x.fillRect(0,Math.random()*s|0,s,Math.random()*3+1|0);}
+  x.fillStyle='rgba(255,200,100,0.08)';
+  for(let i=0;i<20;i++)x.fillRect(Math.random()*s|0,Math.random()*s|0,1,Math.random()*8+2|0);
 });
 
-// Oak leaves texture
+// Oak leaves — lush layered green
 const TEX_LEAVES=mkTex((x,s)=>{
-  x.fillStyle='#2D7A1A';x.fillRect(0,0,s,s);
-  for(let i=0;i<150;i++){
-    const g=Math.random();
-    x.fillStyle=g>.6?'#1E6610':g>.3?'#3A8E28':'#4AA235';
-    x.fillRect(Math.random()*s|0,Math.random()*s|0,4,4);
-  }
+  _mcGrid(x,s,['#2A7018','#1E5E10','#388024','#307020','#248018'],true);
+  for(let i=0;i<50;i++){const g=Math.random();x.fillStyle=g>.6?'#52A838':g>.3?'#1A5A0C':'#3E9030';x.fillRect(Math.random()*s|0,Math.random()*s|0,3,3);}
 });
 
+// Snow — clean bright white with subtle sparkle
 const TEX_SNOW=mkTex((x,s)=>{
-  x.fillStyle='#E8F2FF';x.fillRect(0,0,s,s);
-  for(let i=0;i<150;i++){
-    x.fillStyle=Math.random()>.55?'#F9FDFF':'#D6E6F6';
-    x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);
-  }
-  x.strokeStyle='rgba(0,0,0,0.08)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#EEF5FF','#E4EDFF','#F4FAFF','#DAE8FF','#F8FCFF'],false);
+  x.fillStyle='rgba(200,220,255,0.3)';
+  for(let i=0;i<8;i++)x.fillRect(Math.random()*s|0,Math.random()*s|0,8,1);
+  for(let i=0;i<30;i++){x.fillStyle=Math.random()>.5?'rgba(255,255,255,0.9)':'rgba(160,190,240,0.6)';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);}
+  x.fillStyle='rgba(0,0,0,0.07)';x.fillRect(0,s-1,s,1);x.fillRect(s-1,0,1,s);
 });
 
-// Grass-topped platform (side shows dirt)
+// Grass-topped platform top
 const TEX_PLAT_TOP=mkTex((x,s)=>{
-  x.fillStyle='#5DA832';x.fillRect(0,0,s,s);
-  for(let i=0;i<100;i++){
-    x.fillStyle=Math.random()>.5?'#4E9228':'#6EBC3E';
-    x.fillRect(Math.random()*s|0,Math.random()*s|0,3,3);
-  }
-  x.strokeStyle='rgba(0,0,0,0.10)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#52A020','#469018','#5EAE2A','#4A9820','#68BC32'],true);
+  for(let i=0;i<35;i++){x.fillStyle=Math.random()>.5?'#7ADA42':'#326C10';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,3);}
 });
 
-// Sand texture
+// Sand — warm golden
 const TEX_SAND=mkTex((x,s)=>{
-  x.fillStyle='#C2A05A';x.fillRect(0,0,s,s);
-  for(let i=0;i<140;i++){const g=Math.random();x.fillStyle=g>.7?'#B8923E':g>.4?'#CEB070':'#D4BA80';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);}
-  x.strokeStyle='rgba(0,0,0,0.07)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#C8A858','#D4B86A','#BC9840','#DCBE72','#B89038'],false);
+  for(let i=0;i<50;i++){const g=Math.random();x.fillStyle=g>.7?'#A8803A':g>.4?'#E0CA80':'#C8A858';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);}
+  x.fillStyle='rgba(0,0,0,0.08)';x.fillRect(0,s-1,s,1);
 });
 
-// Brick texture
+// Brick — classic red with clear mortar lines
 const TEX_BRICK=mkTex((x,s)=>{
-  x.fillStyle='#7A2E1E';x.fillRect(0,0,s,s);
+  x.fillStyle='#5A1E0E';x.fillRect(0,0,s,s); // mortar color
   for(let row=0;row<8;row++){
-    const oy=row%2?0:4;
-    for(let col=0;col<9;col++){
-      const shade=Math.random()>.5?'#9E4232':'#8B3526';
-      x.fillStyle=shade;
-      x.fillRect((col*8+oy)%s,row*8,6,6);
+    const oy=(row%2)*8;
+    const brickCols=['#A83A24','#942E1A','#B84432','#9C3A22'];
+    for(let col=0;col<5;col++){
+      x.fillStyle=brickCols[(row+col)%brickCols.length];
+      x.fillRect((col*16+oy)%s+1, row*8+1, 14, 6);
     }
   }
-  x.strokeStyle='rgba(0,0,0,0.30)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  x.fillStyle='rgba(255,160,120,0.12)';
+  for(let i=0;i<20;i++)x.fillRect(Math.random()*s|0,Math.random()*s|0,4,2);
 });
 
-// Ice texture
+// Ice — glassy blue crystal
 const TEX_ICE=mkTex((x,s)=>{
-  x.fillStyle='#A8D8F0';x.fillRect(0,0,s,s);
-  for(let i=0;i<90;i++){const g=Math.random();x.fillStyle=g>.6?'#BDE8FF':g>.3?'#9CC8E0':'#C8EEFF';x.fillRect(Math.random()*s|0,Math.random()*s|0,3,3);}
-  x.strokeStyle='rgba(140,200,255,0.45)';x.lineWidth=1;
-  for(let i=0;i<5;i++){x.beginPath();x.moveTo(Math.random()*s,Math.random()*s);x.lineTo(Math.random()*s,Math.random()*s);x.stroke();}
-  x.strokeStyle='rgba(0,0,0,0.08)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#9CD0EC','#A8DCFA','#8EC4E0','#B8E8FF','#90CCEC'],false);
+  x.strokeStyle='rgba(180,230,255,0.70)';x.lineWidth=1;
+  for(let i=0;i<6;i++){x.beginPath();x.moveTo(Math.random()*s,Math.random()*s);x.lineTo(Math.random()*s,Math.random()*s);x.stroke();}
+  x.fillStyle='rgba(255,255,255,0.30)';
+  for(let i=0;i<25;i++)x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);
+  x.strokeStyle='rgba(100,180,240,0.35)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
 });
 
-// Mossy stone texture
+// Mossy stone — stone with green patches
 const TEX_MOSSY=mkTex((x,s)=>{
-  x.fillStyle='#6E7A54';x.fillRect(0,0,s,s);
-  for(let i=0;i<110;i++){const g=Math.random();x.fillStyle=g>.6?'#5A6840':g>.3?'#7A8A60':'#4A5832';x.fillRect(Math.random()*s|0,Math.random()*s|0,4,4);}
-  x.strokeStyle='rgba(0,0,0,0.22)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  _mcGrid(x,s,['#606E48','#6A7850','#54643E','#708058','#4E5C38'],true);
+  for(let i=0;i<40;i++){const g=Math.random();x.fillStyle=g>.6?'#4A6030':g>.3?'#7A9060':'#3A4E28';x.fillRect(Math.random()*s|0,Math.random()*s|0,4,3);}
+  x.fillStyle='rgba(100,160,60,0.18)';
+  for(let i=0;i<15;i++)x.fillRect(Math.random()*s|0,Math.random()*s|0,6,4);
 });
 
-// Sandstone texture (stratified bands)
+// Sandstone — layered bands
 const TEX_SANDSTONE=mkTex((x,s)=>{
-  x.fillStyle='#D4A855';x.fillRect(0,0,s,s);
-  for(let row=0;row<8;row++){x.fillStyle=Math.random()>.5?'#C49840':'#E0BC70';x.fillRect(0,row*8,s,7);}
-  for(let i=0;i<60;i++){x.fillStyle=Math.random()>.5?'#B88030':'#EAC87A';x.fillRect(Math.random()*s|0,Math.random()*s|0,2,2);}
-  x.strokeStyle='rgba(0,0,0,0.14)';x.lineWidth=1;x.strokeRect(.5,.5,s-1,s-1);
+  x.fillStyle='#CCa044';x.fillRect(0,0,s,s);
+  const bandCols=['#D4AA50','#C09438','#DCBA60','#B88830','#E8CC70'];
+  for(let row=0;row<8;row++){x.fillStyle=bandCols[row%bandCols.length];x.fillRect(0,row*8,s,7);}
+  for(let i=0;i<40;i++){x.fillStyle=Math.random()>.5?'#A87828':'#F0D888';x.fillRect(Math.random()*s|0,Math.random()*s|0,3,1);}
+  x.fillStyle='rgba(0,0,0,0.15)';
+  for(let row=1;row<8;row++){x.fillRect(0,row*8-1,s,1);}
 });
 
 const mapRoot = new THREE.Group();
@@ -1307,6 +1319,7 @@ function meshMaterialsForType(pd){
 function addPlatform(pd){
   const mesh=new THREE.Mesh(geo(pd.sx,pd.sy,pd.sz),meshMaterialsForType(pd));
   mesh.position.set(pd.cx,pd.cy,pd.cz);
+  mesh.castShadow=true; mesh.receiveShadow=true;
   mapRoot.add(mesh);
   platforms.push({
     min:new THREE.Vector3(pd.cx-pd.sx/2,pd.cy-pd.sy/2,pd.cz-pd.sz/2),
@@ -1319,30 +1332,30 @@ function addTree(x,z){
   const h=4.2+Math.random()*2.2;
   const trunkTex=TEX_OAK.clone();trunkTex.repeat.set(1,h/2);trunkTex.wrapS=trunkTex.wrapT=THREE.RepeatWrapping;
   const trunk=new THREE.Mesh(geo(0.6,h,0.6),new THREE.MeshLambertMaterial({map:trunkTex}));
-  trunk.position.set(x,h/2-1,z);mapRoot.add(trunk);
+  trunk.position.set(x,h/2-1,z);trunk.castShadow=true;trunk.receiveShadow=true;mapRoot.add(trunk);
   const leafMat=new THREE.MeshLambertMaterial({map:TEX_LEAVES});
   const ly=h-0.5;
   for(const def of [[4,1.2,4,0],[3,1.2,3,1.2],[2,1,2,2.2],[2,1,4,0.5],[4,1,2,0.5]]){
     const box=new THREE.Mesh(geo(def[0],def[1],def[2]),leafMat);
-    box.position.set(x,ly+def[3],z);mapRoot.add(box);
+    box.position.set(x,ly+def[3],z);box.castShadow=true;box.receiveShadow=true;mapRoot.add(box);
   }
 }
 
 function addTuft(x,z,col){
   const tuft=new THREE.Mesh(geo(0.15,0.18+Math.random()*0.28,0.15),mkMat(col));
-  tuft.position.set(x,-0.1+tuft.geometry.parameters.height/2,z);mapRoot.add(tuft);
+  tuft.position.set(x,-0.1+tuft.geometry.parameters.height/2,z);tuft.castShadow=true;mapRoot.add(tuft);
 }
 
 function addSpawnMarker(team, pos, color){
   const padMat = mkMat(color, team === 'blue' ? 0x0A1A66 : 0x551111);
   const core = new THREE.Mesh(cylGeo(1.8,1.8,0.22,18), padMat);
-  core.position.set(pos.x,0.11,pos.z);
+  core.position.set(pos.x,0.11,pos.z);core.receiveShadow=true;
   mapRoot.add(core);
   const cap = new THREE.Mesh(cylGeo(1.18,1.18,0.08,18), mkMat(0xF5F5F5));
-  cap.position.set(pos.x,0.27,pos.z);
+  cap.position.set(pos.x,0.27,pos.z);cap.receiveShadow=true;
   mapRoot.add(cap);
   const beacon = new THREE.Mesh(geo(0.18,1.3,0.18), mkMat(color, team === 'blue' ? 0x123399 : 0x771111));
-  beacon.position.set(pos.x,0.95,pos.z);
+  beacon.position.set(pos.x,0.95,pos.z);beacon.castShadow=true;
   mapRoot.add(beacon);
 }
 
@@ -1649,6 +1662,7 @@ function mkBufMesh(posArr,hexColor,parent){
   g.setAttribute("position",new THREE.BufferAttribute(new Float32Array(posArr),3));
   g.computeVertexNormals();
   const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:hexColor}));
+  m.castShadow=true; m.receiveShadow=true;
   parent.add(m);
   return m;
 }
@@ -5166,6 +5180,186 @@ _buildPips();
   setTimeout(()=>{ h.style.opacity='0'; },5000);
   setTimeout(()=>{ h.remove(); },5800);
 })();
+
+})();
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   ARMOR VISUAL FIX — replaces b64 geometry with correct
+   procedural Three.js geometry.
+
+   Coordinate reference (all in each group's LOCAL space):
+   • bodyGrp  at art(0,0,0)         body mesh Y [0.669–1.274]
+   • headGrp  at art(0,1.250,0)     head mesh Y [0–0.55]
+   • rArmGrp  at art(0.225,1.220,0) arm  mesh Y [0,−0.55]
+   • lArmGrp  at art(−0.225,1.220,0)
+   • rLegGrp  at art(0.080,0.670,0) leg  mesh Y [0,−0.67]
+   • lLegGrp  at art(−0.080,0.670,0)
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+const ARMOR_PALETTE = {
+  iron:      { main:0xC8D4DC, mid:0xA0B0BC, dark:0x7A8E9C, edge:0xE8F2F8, spec:0x6A7E8E },
+  diamond:   { main:0x3ED8E0, mid:0x28B0BA, dark:0x189098, edge:0xA0F4FF, spec:0x0C7888 },
+  netherite: { main:0x5A5268, mid:0x403C50, dark:0x28242E, edge:0x8A7AA0, spec:0xAA88CC }
+};
+
+function mkAMat(col){
+  const m=new THREE.MeshPhongMaterial({color:col,shininess:55,specular:0x446688});
+  return m;
+}
+function mkAMatDark(col){
+  return new THREE.MeshPhongMaterial({color:col,shininess:30,specular:0x223344});
+}
+
+function addABox(parent,x,y,z,w,h,d,mat,pieces){
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  mesh.position.set(x,y,z);
+  mesh.userData.isArmorCharMesh=true;
+  mesh.castShadow=true; mesh.receiveShadow=true;
+  parent.add(mesh);
+  if(pieces)pieces.push({parent,mesh});
+  return mesh;
+}
+
+function buildArmorForPart(tier,partName,group,pieces){
+  const P=ARMOR_PALETTE[tier]||ARMOR_PALETTE.iron;
+  const mMain=mkAMat(P.main), mMid=mkAMat(P.mid), mDark=mkAMatDark(P.dark), mEdge=mkAMat(P.edge);
+  const isN=(tier==='netherite'), isD=(tier==='diamond');
+
+  if(partName==='body'){
+    /* ── Chest plate ── sits over bodyGrp mesh (Y 0.669–1.274) */
+    addABox(group, 0,    0.968, 0.002,  0.360, 0.605, 0.214, mMain, pieces);
+    /* Spine-ridge back accent */
+    addABox(group, 0,    0.968,-0.002,  0.340, 0.580, 0.208, mMid,  pieces);
+    /* Collar plate */
+    addABox(group, 0,    1.247, 0.002,  0.310, 0.055, 0.198, mEdge, pieces);
+    /* Belt strip */
+    addABox(group, 0,    0.718, 0.002,  0.295, 0.072, 0.192, mDark, pieces);
+    /* Centre sternum line */
+    addABox(group, 0,    0.968, 0.112,  0.045, 0.540, 0.010, mDark, pieces);
+
+    /* ── Shoulder pauldrons (right & left) ── */
+    const sw = isN?0.185:isD?0.165:0.150;   // width
+    const sh = isN?0.150:isD?0.120:0.105;   // height
+    const sd = isN?0.240:isD?0.220:0.205;   // depth
+    /* Right pauldron — centred on rArmGrp X offset (0.225) */
+    addABox(group,  0.225, 1.232, 0, sw, sh, sd, mMain, pieces);
+    addABox(group,  0.255, 1.225, 0, 0.040, sh*0.85, sd*0.92, mEdge, pieces);
+    /* Left pauldron */
+    addABox(group, -0.225, 1.232, 0, sw, sh, sd, mMain, pieces);
+    addABox(group, -0.255, 1.225, 0, 0.040, sh*0.85, sd*0.92, mEdge, pieces);
+
+    if(isN){
+      /* Extra netherite rim detail on shoulders */
+      addABox(group,  0.225, 1.248, 0, sw*0.90, 0.022, sd*1.05, mEdge, pieces);
+      addABox(group, -0.225, 1.248, 0, sw*0.90, 0.022, sd*1.05, mEdge, pieces);
+    }
+  }
+
+  else if(partName==='head'){
+    /* ── Helmet ── covers headGrp mesh (Y 0–0.55) */
+    addABox(group, 0, 0.272, 0.008, 0.360, 0.565, 0.385, mMain, pieces);
+    /* Visor ridge */
+    addABox(group, 0, 0.078, 0.196, 0.300, 0.058, 0.018, mDark, pieces);
+    /* Top crest */
+    addABox(group, 0, 0.550, 0.000, 0.055, 0.055, 0.330, mMid,  pieces);
+
+    if(isN){
+      /* Netherite-only: cheek / chin guards — attached to HEAD, not body */
+      addABox(group,  0.124,-0.052, 0.164, 0.110, 0.235, 0.120, mDark, pieces);
+      addABox(group, -0.124,-0.052, 0.164, 0.110, 0.235, 0.120, mDark, pieces);
+      /* Chin bridge */
+      addABox(group,  0.000,-0.088, 0.166, 0.195, 0.078, 0.105, mMain, pieces);
+      /* Brow ridge */
+      addABox(group,  0.000, 0.130, 0.193, 0.310, 0.040, 0.010, mEdge, pieces);
+    }
+    if(isD){
+      addABox(group, 0, 0.080, 0.194, 0.320, 0.038, 0.010, mEdge, pieces);
+    }
+  }
+
+  else if(partName==='rArm'||partName==='lArm'){
+    /* Arm spans Y [0,−0.55] — shoulder=0, hand=−0.55 */
+    /* Upper-arm bracer */
+    addABox(group, 0,-0.135, 0, 0.135, 0.260, 0.135, mMain, pieces);
+    /* Elbow guard */
+    addABox(group, 0,-0.282,-0.005, isN?0.148:0.132, 0.095, isN?0.152:0.138, mDark, pieces);
+    /* Gauntlet — wrist/hand, clearly on arm NOT near legs */
+    addABox(group, 0,-0.458, 0, isN?0.152:0.138, 0.175, isN?0.152:0.138, mMain, pieces);
+    /* Knuckle plate */
+    addABox(group, 0,-0.522, 0.014, isN?0.142:0.128, 0.062, isN?0.088:0.078, mDark, pieces);
+    if(isN){
+      /* Extra netherite cuff band */
+      addABox(group, 0,-0.398, 0, 0.155, 0.028, 0.155, mEdge, pieces);
+    }
+  }
+
+  else if(partName==='rLeg'||partName==='lLeg'){
+    /* Leg spans Y [0,−0.67] — hip=0, foot=−0.67 */
+    /* Thigh plate */
+    addABox(group, 0,-0.178, 0, 0.155, 0.300, 0.155, mMain, pieces);
+    /* Knee cap */
+    addABox(group, 0,-0.348, 0.005, 0.142, 0.090, 0.095, mDark, pieces);
+    /* Shin greave */
+    addABox(group, 0,-0.516, 0, 0.132, 0.245, 0.135, mMain, pieces);
+    /* Boot cap */
+    addABox(group, 0,-0.634, 0.010, 0.145, 0.075, 0.158, mMid,  pieces);
+    if(isN){
+      addABox(group, 0,-0.634, 0.010, 0.148, 0.025, 0.162, mEdge, pieces);
+    }
+  }
+}
+
+/* ── Override attachArmorModel ── */
+const _origDetach = (typeof detachArmorModel !== 'undefined') ? detachArmorModel : null;
+const _origApplyVis = (typeof applyArmorPartVisibility !== 'undefined') ? applyArmorPartVisibility : null;
+const _origSetDefault = (typeof setDefaultCharacterVisibleForArmor !== 'undefined') ? setDefaultCharacterVisibleForArmor : null;
+
+attachArmorModel = function(ent, tierOrRegionMap){
+  if(!ent||!ent.char) return;
+  if(_origDetach) _origDetach(ent);
+  const p=ent.char.parts; if(!p) return;
+
+  const regionMap = (typeof tierOrRegionMap==='string')
+    ? {head:tierOrRegionMap,body:tierOrRegionMap,legs:tierOrRegionMap}
+    : (tierOrRegionMap||{});
+
+  const partTierMap={
+    head: regionMap.head||null,
+    body: regionMap.body||null,
+    rArm: regionMap.body||null,
+    lArm: regionMap.body||null,
+    rLeg: regionMap.legs||null,
+    lLeg: regionMap.legs||null
+  };
+  const PART_GROUPS={body:p.body,head:p.head,rArm:p.rArm,lArm:p.lArm,rLeg:p.rLeg,lLeg:p.lLeg};
+  const pieces=[];
+
+  for(const [pn,grp] of Object.entries(PART_GROUPS)){
+    const tier=partTierMap[pn];
+    if(!tier||!grp) continue;
+    buildArmorForPart(tier,pn,grp,pieces);
+  }
+
+  if(!pieces.length){
+    ent._armorPieces=null; ent._armorMesh=null;
+    if(_origSetDefault) _origSetDefault(ent,true);
+    return;
+  }
+  ent._armorPieces=pieces;
+  ent._armorMesh=pieces[0].mesh;
+  if(_origApplyVis) _origApplyVis(ent);
+};
+
+/* Re-attach armor for any entities already spawned */
+if(typeof allEntities!=='undefined'){
+  for(const ent of allEntities){
+    if(ent && typeof syncArmorStateForEntity==='function') syncArmorStateForEntity(ent);
+  }
+}
 
 })();
 </script>
