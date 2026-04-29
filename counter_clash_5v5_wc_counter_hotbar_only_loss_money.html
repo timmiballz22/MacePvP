@@ -5363,5 +5363,222 @@ if(typeof allEntities!=='undefined'){
 
 })();
 </script>
+<!-- ═══════════════════════════════════════════════════════════════
+     FINAL UX POLISH PATCH
+     · Kill feed: slide-in + 6 s auto-fade
+     · Hotbar: collapse empty slots to thin dividers
+     · Fall meter: opacity:0 when on ground
+     · Attack charge bar: wider + gold pulse when full
+     · Announce: scale-pop entrance + smoother 0.45 s fade-out
+     · Dead overlay: vertically centered, larger text
+     · Buy menu: auto-opens 900 ms after each round start
+     · Wind Charge: flash slot when 0 charges remain
+     · View badge: 1P / 3P indicator
+     · Round pips: 10 px
+     ═══════════════════════════════════════════════════════════════ -->
+<style id="final-ux-polish">
+/* ── Kill feed: slide in from right, fade out right ─────────────── */
+@keyframes _kfIn  { from{opacity:0;transform:translateX(22px)} to{opacity:1;transform:translateX(0)} }
+@keyframes _kfOut { to  {opacity:0;transform:translateX(16px)} }
+#killfeed .kill-line               { animation:_kfIn  0.14s ease-out both; }
+#killfeed .kill-line.kf-dying      { animation:_kfOut 0.38s ease-in  both !important;
+                                     pointer-events:none; }
+
+/* ── Empty hotbar slots: collapse to thin dividers ──────────────── */
+.hb-slot.hb-empty {
+  width:10px !important; min-width:10px !important; max-width:10px !important;
+  opacity:0.15 !important;
+  background:rgba(255,255,255,0.03) !important;
+  border-color:rgba(255,255,255,0.05) !important;
+  cursor:default !important; pointer-events:none !important;
+}
+.hb-slot.hb-empty * { display:none !important; }
+
+/* ── Attack charge bar: wider + colored ─────────────────────────── */
+#atk-ind {
+  width:90px !important; height:7px !important;
+  top:calc(50% + 18px) !important;
+  border-radius:4px !important;
+  border:1px solid rgba(255,255,255,0.22) !important;
+}
+#atk-fill { background:linear-gradient(90deg,#1E4EA8,#5AACFF) !important; transition:none !important; }
+#atk-ind.atk-rdy #atk-fill { background:#FFD700 !important; }
+@keyframes _atkPulse { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 7px rgba(255,215,0,0.75)} }
+#atk-ind.atk-rdy { animation:_atkPulse 0.6s ease-in-out infinite; }
+
+/* ── Fall meter: fade when on ground ────────────────────────────── */
+#fall-meter { transition:opacity 0.35s ease !important; }
+#fall-meter.fm-ground { opacity:0 !important; }
+
+/* ── Announce: scale-pop entrance, smoother fade-out ────────────── */
+@keyframes _annIn {
+  0%  { opacity:0; transform:translate(-50%,-50%) scale(0.64); }
+  55% { opacity:1; transform:translate(-50%,-50%) scale(1.06); }
+  80% { transform:translate(-50%,-50%) scale(0.98); }
+  100%{ transform:translate(-50%,-50%) scale(1.00); }
+}
+#announce { transition:opacity 0.45s ease !important; }
+#announce.ann-pop { animation:_annIn 0.28s ease-out forwards !important; }
+
+/* ── Dead overlay: vertically centered, bigger text ─────────────── */
+#dead-overlay {
+  bottom:auto !important; top:52% !important;
+  transform:translateX(-50%) translateY(-50%) !important;
+}
+#dead-overlay .dead-msg {
+  font-size:22px !important; padding:10px 28px !important; letter-spacing:2px !important;
+}
+
+/* ── Buy phase banner: bolder appearance ────────────────────────── */
+#buy-phase-banner {
+  font-size:15px !important; padding:9px 24px !important;
+  border-width:2px !important; letter-spacing:1.1px !important;
+  box-shadow:0 0 16px rgba(255,208,122,0.18) !important;
+}
+
+/* ── WC empty slot flash ────────────────────────────────────────── */
+@keyframes _wcEmpty {
+  0%,100%{ border-color:rgba(255,255,255,0.14); background:#171D26; }
+  40%    { border-color:#FF5533 !important; background:rgba(180,30,10,0.30) !important; }
+}
+.wc-slot-flash { animation:_wcEmpty 0.22s ease-in-out 3 !important; }
+
+/* ── 1P/3P view badge ───────────────────────────────────────────── */
+#view-badge {
+  position:fixed; bottom:104px; right:14px; z-index:1003;
+  background:rgba(8,11,16,0.82); border:1px solid rgba(255,255,255,0.10);
+  color:#7A8FA8; font-size:10px; letter-spacing:1px; padding:3px 8px;
+  font-family:'Courier New',monospace; pointer-events:none; display:none;
+}
+
+/* ── Round pips: 10 px ──────────────────────────────────────────── */
+.rpip { width:10px !important; height:10px !important; }
+</style>
+
+<script>
+/* ── FINAL UX POLISH — all patches in one IIFE ─────────────────────── */
+(function(){
+'use strict';
+
+/* 1. KILL FEED — slide-in animation + 6 s auto-fade */
+const _kf0 = addKillFeed;
+addKillFeed = function(killer, victim, weapon, meta){
+  _kf0(killer, victim, weapon, meta);
+  const box = document.getElementById('killfeed');
+  if(!box) return;
+  const row = box.firstElementChild;
+  if(!row) return;
+  if(row._kfT) clearTimeout(row._kfT);
+  row._kfT = setTimeout(()=>{
+    if(!row.parentNode) return;
+    row.classList.add('kf-dying');
+    setTimeout(()=>{ if(row.parentNode) row.parentNode.removeChild(row); }, 420);
+  }, 6000);
+};
+
+/* 2. HOTBAR — collapse empty slots to thin dividers */
+const _bh0 = buildHotbar;
+buildHotbar = function(){
+  _bh0.apply(this, arguments);
+  const hb = document.getElementById('hotbar');
+  if(!hb) return;
+  hb.querySelectorAll('.hb-slot').forEach((slot, i)=>{
+    const hasItem = slot.querySelector('canvas, .icon-wc-hb, .item-model-holder');
+    const isEmpty = !hasItem && !(typeof hotbar !== 'undefined' && hotbar[i]);
+    slot.classList.toggle('hb-empty', isEmpty);
+  });
+};
+
+/* 3. UPDATE HUD — fall meter, charge bar, view badge */
+const _uh0 = updateHUD;
+updateHUD = function(){
+  _uh0.apply(this, arguments);
+  if(!player) return;
+
+  /* Fall meter: hide when safely on ground */
+  const fm = document.getElementById('fall-meter');
+  if(fm){
+    const fall = typeof getFall === 'function' ? getFall(player) : 0;
+    const smashing = typeof isSmash === 'function' && isSmash(fall, player.vel.y);
+    fm.classList.toggle('fm-ground', player.onGround && fall < 0.18 && !smashing);
+  }
+
+  /* Charge bar: gold pulse when fully charged on a melee weapon */
+  const ind = document.getElementById('atk-ind');
+  if(ind){
+    const charge = typeof getAttackCharge === 'function' ? getAttackCharge(player) : 1;
+    const item   = typeof selectedItem    === 'function' ? selectedItem()          : null;
+    ind.classList.toggle('atk-rdy', charge >= 0.97 && (item === 'mace' || item === 'knife'));
+  }
+
+  /* View badge: 1P / 3P */
+  const vb = document.getElementById('view-badge');
+  if(vb){
+    const active = typeof pointerLocked !== 'undefined' && pointerLocked &&
+                   typeof menuState     !== 'undefined' && menuState === 'none';
+    vb.style.display = active ? 'block' : 'none';
+    if(active && typeof firstPerson !== 'undefined'){
+      vb.textContent = firstPerson ? '1P VIEW' : '3P VIEW';
+    }
+  }
+};
+
+/* 4. ANNOUNCE — scale-pop entrance animation */
+const _ann0 = announce;
+let _annPopT = null;
+announce = function(msg, color){
+  _ann0(msg, color);
+  const el = document.getElementById('announce');
+  if(!el) return;
+  clearTimeout(_annPopT);
+  el.classList.remove('ann-pop');
+  void el.offsetWidth;                 /* force reflow so animation restarts */
+  el.classList.add('ann-pop');
+  _annPopT = setTimeout(()=> el.classList.remove('ann-pop'), 500);
+};
+
+/* 5. INIT ROUND — auto-open buy menu 900 ms after round start */
+const _ir0 = initRound;
+initRound = function(initial){
+  _ir0.apply(this, arguments);
+  setTimeout(()=>{
+    if(typeof window.__ECON === 'undefined') return;
+    if(typeof window.__ECON.openBuyMenu !== 'function') return;
+    const banner = document.getElementById('buy-phase-banner');
+    if(!banner || !banner.classList.contains('active')) return;
+    if(!window._buyMenuOpen) window.__ECON.openBuyMenu();
+  }, 900);
+};
+
+/* 6. WIND CHARGE — flash slot when empty */
+const _wc0 = throwWC;
+throwWC = function(ent, dir){
+  if(ent === player && player && player.wc <= 0){
+    if(typeof hotbar !== 'undefined'){
+      const wcIdx = hotbar.indexOf('wc');
+      if(wcIdx >= 0){
+        const hb = document.getElementById('hotbar');
+        const slot = hb && hb.querySelectorAll('.hb-slot')[wcIdx];
+        if(slot){
+          slot.classList.add('wc-slot-flash');
+          setTimeout(()=> slot.classList.remove('wc-slot-flash'), 700);
+        }
+      }
+    }
+    return;  /* no sound, no action */
+  }
+  _wc0(ent, dir);
+};
+
+/* 7. VIEW BADGE element creation */
+if(!document.getElementById('view-badge')){
+  const badge = document.createElement('div');
+  badge.id = 'view-badge';
+  badge.textContent = '1P VIEW';
+  document.body.appendChild(badge);
+}
+
+})();
+</script>
 </body>
 </html>
